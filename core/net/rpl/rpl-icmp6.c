@@ -177,7 +177,8 @@ void
 dis_output(uip_ipaddr_t *addr)
 {
   unsigned char *buffer;
-  uip_ipaddr_t tmpaddr;
+  static uip_ipaddr_t tmpaddr;
+  memset(&tmpaddr,0,sizeof(uip_ipaddr_t));
 
   /* DAG Information Solicitation  - 2 bytes reserved      */
   /*      0                   1                   2        */
@@ -206,11 +207,11 @@ dio_input(void)
 {
   unsigned char *buffer;
   uint8_t buffer_length;
-  rpl_dio_t dio;
+  static rpl_dio_t dio;
   uint8_t subopt_type;
   int i;
   int len;
-  uip_ipaddr_t from;
+  static uip_ipaddr_t from;
   uip_ds6_nbr_t *nbr;
 
   memset(&dio, 0, sizeof(dio));
@@ -419,7 +420,8 @@ dio_output(rpl_instance_t *instance, uip_ipaddr_t *uc_addr)
   int pos;
   rpl_dag_t *dag = instance->current_dag;
 #if !RPL_LEAF_ONLY
-  uip_ipaddr_t addr;
+  static uip_ipaddr_t addr;
+  memset(&addr,0,sizeof(uip_ipaddr_t));
 #endif /* !RPL_LEAF_ONLY */
 
 #if RPL_LEAF_ONLY
@@ -565,7 +567,7 @@ dio_output(rpl_instance_t *instance, uip_ipaddr_t *uc_addr)
 static void
 dao_input(void)
 {
-  uip_ipaddr_t dao_sender_addr;
+  static uip_ipaddr_t dao_sender_addr;
   rpl_dag_t *dag;
   rpl_instance_t *instance;
   unsigned char *buffer;
@@ -579,7 +581,7 @@ dao_input(void)
   uint8_t pathcontrol;
   uint8_t pathsequence;
   */
-  uip_ipaddr_t prefix;
+  static uip_ipaddr_t prefix;
   uip_ds6_route_t *rep;
   uint8_t buffer_length;
   int pos;
@@ -588,6 +590,7 @@ dao_input(void)
   int learned_from;
   rpl_parent_t *p;
 
+  memset(&prefix,0,sizeof(uip_ipaddr_t));
   prefixlen = 0;
 
   uip_ipaddr_copy(&dao_sender_addr, &UIP_IP_BUF->srcipaddr);
@@ -738,7 +741,8 @@ void
 dao_output(rpl_parent_t *parent, uint8_t lifetime)
 {
   /* Destination Advertisement Object */
-  uip_ipaddr_t prefix;
+  static uip_ipaddr_t prefix;
+  memset(&prefix,0,sizeof(uip_ipaddr_t));
 
   if(get_global_addr(&prefix) == 0) {
     PRINTF("RPL: No global address set for this node - suppressing DAO\n");

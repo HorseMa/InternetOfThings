@@ -82,7 +82,7 @@ static char rrep_pending;		/* A reply for a request is pending. */
 static void
 send_rreq(struct route_discovery_conn *c, const rimeaddr_t *dest)
 {
-  rimeaddr_t dest_copy;
+  static rimeaddr_t dest_copy;
   struct route_msg *msg;
 
   rimeaddr_copy(&dest_copy, dest);
@@ -105,7 +105,7 @@ send_rrep(struct route_discovery_conn *c, const rimeaddr_t *dest)
 {
   struct rrep_hdr *rrepmsg;
   struct route_entry *rt;
-  rimeaddr_t saved_dest;
+  static rimeaddr_t saved_dest;
   
   rimeaddr_copy(&saved_dest, dest);
 
@@ -164,7 +164,7 @@ rrep_packet_received(struct unicast_conn *uc, const rimeaddr_t *from)
 {
   struct rrep_hdr *msg = packetbuf_dataptr();
   struct route_entry *rt;
-  rimeaddr_t dest;
+  static rimeaddr_t dest;
   struct route_discovery_conn *c = (struct route_discovery_conn *)
     ((char *)uc - offsetof(struct route_discovery_conn, rrepconn));
 
@@ -187,7 +187,7 @@ rrep_packet_received(struct unicast_conn *uc, const rimeaddr_t *from)
     rrep_pending = 0;
     ctimer_stop(&c->t);
     if(c->cb->new_route) {
-      rimeaddr_t originator;
+      static rimeaddr_t originator;
 
       /* If the callback modifies the packet, the originator address
          will be lost. Therefore, we need to copy it into a local

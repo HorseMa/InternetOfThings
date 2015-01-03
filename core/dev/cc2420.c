@@ -628,7 +628,8 @@ cc2420_interrupt(void)
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(cc2420_process, ev, data)
 {
-  int len;
+  static int len;
+  len = 0;
   PROCESS_BEGIN();
 
   PRINTF("cc2420_process: started\n");

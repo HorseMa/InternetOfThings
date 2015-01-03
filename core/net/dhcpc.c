@@ -397,8 +397,8 @@ PT_THREAD(handle_dhcp(process_event_t ev, void *data))
 void
 dhcpc_init(const void *mac_addr, int mac_len)
 {
-  uip_ipaddr_t addr;
-  
+  static uip_ipaddr_t addr;
+  memset(&addr,0,sizeof(uip_ipaddr_t));
   s.mac_addr = mac_addr;
   s.mac_len  = mac_len;
 
@@ -422,8 +422,8 @@ dhcpc_appcall(process_event_t ev, void *data)
 void
 dhcpc_request(void)
 {
-  uip_ipaddr_t ipaddr;
-  
+  static uip_ipaddr_t ipaddr;
+  memset(&ipaddr,0,sizeof(uip_ipaddr_t));
   if(s.state == STATE_INITIAL) {
     uip_ipaddr(&ipaddr, 0,0,0,0);
     uip_sethostaddr(&ipaddr);

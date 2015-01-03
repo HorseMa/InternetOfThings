@@ -73,9 +73,10 @@ void
 uip_udp_packet_sendto(struct uip_udp_conn *c, const void *data, int len,
 		      const uip_ipaddr_t *toaddr, uint16_t toport)
 {
-  uip_ipaddr_t curaddr;
-  uint16_t curport;
-
+  static uip_ipaddr_t curaddr;
+  static uint16_t curport;
+  memset(&curaddr,0,sizeof(uip_ipaddr_t));
+  curport = 0;
   if(toaddr != NULL) {
     /* Save current IP addr/port. */
     uip_ipaddr_copy(&curaddr, &c->ripaddr);

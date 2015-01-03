@@ -130,7 +130,7 @@ adjust_offset(rtimer_clock_t authoritative_time, rtimer_clock_t local_time)
 static void
 broadcast_recv(struct broadcast_conn *c, const rimeaddr_t *from)
 {
-  struct timesynch_msg msg;
+  static struct timesynch_msg msg;
 
   memcpy(&msg, packetbuf_dataptr(), sizeof(msg));
 
@@ -151,7 +151,8 @@ PROCESS_THREAD(timesynch_process, ev, data)
 {
   static struct etimer sendtimer, intervaltimer;
   static clock_time_t interval;
-  struct timesynch_msg msg;
+  static struct timesynch_msg msg;
+  memset(&msg,0,sizeof(timesynch_msg));
 
   PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
 

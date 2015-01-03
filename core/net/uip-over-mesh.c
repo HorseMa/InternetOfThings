@@ -82,8 +82,8 @@ static void
 recv_data(struct unicast_conn *c, const rimeaddr_t *from)
 {
   struct route_entry *e;
-  rimeaddr_t source;
-    
+  static rimeaddr_t source;
+  memset(&source,0,sizeof(rimeaddr_t));
   uip_len = packetbuf_copyto(&uip_buf[UIP_LLH_LEN]);
 
   source.u8[0] = BUF->srcipaddr.u8[2];
@@ -217,9 +217,9 @@ uip_over_mesh_init(uint16_t channels)
 uint8_t
 uip_over_mesh_send(void)
 {
-  rimeaddr_t receiver;
+  static rimeaddr_t receiver;
   struct route_entry *rt;
-
+  memset(&receiver,0,sizeof(rimeaddr_t));
   /* This function is called by the uip-fw module to send out an IP
      packet. We try to send the IP packet to the next hop route, or we
      queue the packet and send out a route request for the final

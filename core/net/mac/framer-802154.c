@@ -89,8 +89,9 @@ is_broadcast_addr(uint8_t mode, uint8_t *addr)
 static int
 create(void)
 {
-  frame802154_t params;
-  int len;
+  static frame802154_t params;
+  static int len;
+  len = 0;
 
   /* init to zeros */
   memset(&params, 0, sizeof(params));
@@ -186,8 +187,9 @@ create(void)
 static int
 parse(void)
 {
-  frame802154_t frame;
+  static frame802154_t frame;
   int len;
+  memset(&frame,0,sizeof(frame802154_t));
   len = packetbuf_datalen();
   if(frame802154_parse(packetbuf_dataptr(), len, &frame) &&
      packetbuf_hdrreduce(len - frame.payload_len)) {

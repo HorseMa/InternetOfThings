@@ -338,7 +338,8 @@ packet_input(void)
 
 #if NULLRDC_SEND_802154_ACK
     {
-      frame802154_t info154;
+      static frame802154_t info154;
+      memset(&info154,0,sizeof(frame802154_t));
       frame802154_parse(original_dataptr, original_datalen, &info154);
       if(info154.fcf.frame_type == FRAME802154_DATAFRAME &&
          info154.fcf.ack_required != 0 &&

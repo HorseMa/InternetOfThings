@@ -342,7 +342,8 @@ unpack_header(void)
     len = a->len;
     byteptr = bitptr / 8;
     if(PACKETBUF_IS_ADDR(a->type)) {
-      rimeaddr_t addr;
+      static rimeaddr_t addr;
+      memset(&addr,0,sizeof(rimeaddr_t));
       get_bits((uint8_t *)&addr, &hdrptr[byteptr], bitptr & 7, len);
       PRINTF("%d.%d: unpack_header type %d, addr %d.%d\n",
 	     rimeaddr_node_addr.u8[0], rimeaddr_node_addr.u8[1],

@@ -252,9 +252,10 @@ int
 frame802154_parse(uint8_t *data, int len, frame802154_t *pf)
 {
   uint8_t *p;
-  frame802154_fcf_t fcf;
+  static frame802154_fcf_t fcf;
   int c;
 
+  memset(&fcf,0,sizeof(frame802154_fcf_t));
   if(len < 3) {
     return 0;
   }

@@ -335,9 +335,9 @@ set_ip_from_prefix(uip_ipaddr_t *ipaddr, rpl_prefix_t *prefix)
 static void
 check_prefix(rpl_prefix_t *last_prefix, rpl_prefix_t *new_prefix)
 {
-  uip_ipaddr_t ipaddr;
+  static uip_ipaddr_t ipaddr;
   uip_ds6_addr_t *rep;
-
+  memset(&ipaddr,0,sizeof(uip_ipaddr_t));
   if(last_prefix != NULL && new_prefix != NULL &&
      last_prefix->length == new_prefix->length &&
      uip_ipaddr_prefixcmp(&last_prefix->prefix, &new_prefix->prefix, new_prefix->length) &&
@@ -371,9 +371,9 @@ check_prefix(rpl_prefix_t *last_prefix, rpl_prefix_t *new_prefix)
 int
 rpl_set_prefix(rpl_dag_t *dag, uip_ipaddr_t *prefix, unsigned len)
 {
-  rpl_prefix_t last_prefix;
+  static rpl_prefix_t last_prefix;
   uint8_t last_len = dag->prefix_info.length;
-  
+  memset(&last_prefix,0,sizeof(rpl_prefix_t));
   if(len > 128) {
     return 0;
   }

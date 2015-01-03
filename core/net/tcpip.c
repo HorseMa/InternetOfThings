@@ -328,9 +328,9 @@ udp_new(const uip_ipaddr_t *ripaddr, uint16_t port, void *appstate)
 struct uip_udp_conn *
 udp_broadcast_new(uint16_t port, void *appstate)
 {
-  uip_ipaddr_t addr;
+  static uip_ipaddr_t addr;
   struct uip_udp_conn *conn;
-
+  memset(&addr,0,sizeof(uip_ipaddr_t));
 #if UIP_CONF_IPV6
   uip_create_linklocal_allnodes_mcast(&addr);
 #else

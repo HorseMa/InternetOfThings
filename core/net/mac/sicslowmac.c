@@ -96,8 +96,9 @@ is_broadcast_addr(uint8_t mode, uint8_t *addr)
 static void
 send_packet(mac_callback_t sent, void *ptr)
 {
-  frame802154_t params;
-  uint8_t len;
+  static frame802154_t params;
+  static uint8_t len;
+  len = 0;
 
   /* init to zeros */
   memset(&params, 0, sizeof(params));
@@ -191,8 +192,9 @@ send_list(mac_callback_t sent, void *ptr, struct rdc_buf_list *buf_list)
 static void
 input_packet(void)
 {
-  frame802154_t frame;
-  int len;
+  static frame802154_t frame;
+  static int len;
+  memset(&frame,0,sizeof(frame802154_t));
 
   len = packetbuf_datalen();
 

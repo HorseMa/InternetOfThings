@@ -1359,7 +1359,7 @@ output(uip_lladdr_t *localdest)
   int framer_hdrlen;
 
   /* The MAC address of the destination of the packet */
-  rimeaddr_t dest;
+  static rimeaddr_t dest;
 
   /* Number of bytes processed. */
   uint16_t processed_ip_out_len;
@@ -1367,7 +1367,7 @@ output(uip_lladdr_t *localdest)
   /* init */
   uncomp_hdr_len = 0;
   rime_hdr_len = 0;
-
+  memset(&dest,0,sizeof(rimeaddr_t));
   /* reset rime buffer */
   packetbuf_clear();
   rime_ptr = packetbuf_dataptr();

@@ -299,7 +299,8 @@ update_parent(struct collect_conn *tc)
      by Gnawali et al (SenSys 2009). */
 
   if(best != NULL) {
-    rimeaddr_t previous_parent;
+    static rimeaddr_t previous_parent;
+    memset(&previous_parent,0,sizeof(rimeaddr_t));
 
     if(DRAW_TREE) {
       rimeaddr_copy(&previous_parent, &tc->parent);
@@ -524,7 +525,8 @@ proactive_probing_callback(void *ptr)
           n != NULL; n = list_item_next(n)) {
         if(n->rtmetric + COLLECT_LINK_ESTIMATE_UNIT < c->rtmetric &&
            collect_link_estimate_num_estimates(&n->le) == 0) {
-          rimeaddr_t current_parent;
+          static rimeaddr_t current_parent;
+          memset(&current_parent,0,sizeof(rimeaddr_t));
 
           PRINTF("proactive_probing_callback: found neighbor with no link estimate, %d.%d\n",
                  n->addr.u8[RIMEADDR_SIZE - 2], n->addr.u8[RIMEADDR_SIZE - 1]);
@@ -936,7 +938,7 @@ node_packet_received(struct unicast_conn *c, const rimeaddr_t *from)
      the packet. */
   if(packetbuf_attr(PACKETBUF_ATTR_PACKET_TYPE) ==
      PACKETBUF_ATTR_PACKET_TYPE_DATA) {
-    rimeaddr_t ack_to;
+    static rimeaddr_t ack_to;
     uint8_t packet_seqno;
 
     stats.datarecv++;
