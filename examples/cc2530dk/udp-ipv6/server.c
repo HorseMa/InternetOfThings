@@ -76,10 +76,12 @@ tcpip_handler(void)
 #if SERVER_REPLY
     uip_ipaddr_copy(&server_conn->ripaddr, &UIP_IP_BUF->srcipaddr);
     server_conn->rport = UIP_UDP_BUF->srcport;
-
+    PRINTF("Response begin\n");
     uip_udp_packet_send(server_conn, buf, len);
+    PRINTF("Response over\n");
     /* Restore server connection to allow data from any node */
     uip_create_unspecified(&server_conn->ripaddr);
+    PRINTF("Restore server connection finish\n");
     server_conn->rport = 0;
 #endif
   }
@@ -102,8 +104,8 @@ print_stats()
 static void
 print_local_addresses(void)
 {
-  int i;
-  uint8_t state;
+  static int i;
+  static uint8_t state;
 
   PRINTF("Server IPv6 addresses:\n");
   for(i = 0; i < UIP_DS6_ADDR_NB; i++) {
@@ -124,7 +126,7 @@ print_local_addresses(void)
 void
 create_dag()
 {
-  rpl_dag_t *dag;
+  static rpl_dag_t *dag;
 
   uip_ip6addr(&ipaddr, 0xaaaa, 0, 0, 0, 0, 0, 0, 0);
   uip_ds6_set_addr_iid(&ipaddr, &uip_lladdr);
@@ -159,6 +161,10 @@ PROCESS_THREAD(udp_server_process, ev, data)
 #endif
 
   server_conn = udp_new(NULL, UIP_HTONS(0), NULL);
+  if(server_conn == NULL)
+  {
+    putstring("udp new err\n");
+  }
   udp_bind(server_conn, UIP_HTONS(3000));
 
   PRINTF("Listen port: 3000, TTL=%u\n", server_conn->ttl);
@@ -168,7 +174,7 @@ PROCESS_THREAD(udp_server_process, ev, data)
     if(ev == tcpip_event) {
       tcpip_handler();
 #if (BUTTON_SENSOR_ON && (DEBUG==DEBUG_PRINT))
-    } else if(ev == sensors_event && data == &button_sensor) {
+    } else if(ev == sensors_event && data == &button_1_sensor) {
       print_stats();
 #endif /* BUTTON_SENSOR_ON */
     }

@@ -14,6 +14,8 @@
  * Build for SmartRF05EB+CC2530EM by default.
  * This define needs to have its final value before inclusion of models.h
  */
+#define UIP_CONF_LOGGING 0
+
 #ifndef MODELS_CONF_CC2531_USB_STICK
 #define MODELS_CONF_CC2531_USB_STICK 0
 #endif
@@ -39,7 +41,7 @@
 
 /* Verbose Startup? Turning this off saves plenty of bytes of CODE in HOME */
 #ifndef STARTUP_CONF_VERBOSE
-#define STARTUP_CONF_VERBOSE  0
+#define STARTUP_CONF_VERBOSE  1
 #endif
 
 /* More CODE space savings by turning off process names */
@@ -135,7 +137,7 @@
 
 /* B2 on the cc2531 USB stick can be a reset button or a general-purpose one */
 #ifndef CC2531_CONF_B2_REBOOTS
-#define CC2531_CONF_B2_REBOOTS        0  /* General Purpose by default */
+#define CC2531_CONF_B2_REBOOTS        1  /* General Purpose by default */
 #endif
 
 /* ADC - Turning this off will disable everything below */
@@ -164,6 +166,7 @@
 #endif /* UIP_CONF_IPV6 */
 
 /* Network Stack */
+//#define UIP_CONF_IPV6 1
 #ifndef NETSTACK_CONF_NETWORK
 #if UIP_CONF_IPV6
 #define NETSTACK_CONF_NETWORK sicslowpan_driver

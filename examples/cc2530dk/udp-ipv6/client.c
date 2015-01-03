@@ -81,7 +81,7 @@ static void
 timeout_handler(void)
 {
   static int seq_id;
-  struct uip_udp_conn *this_conn;
+  static struct uip_udp_conn *this_conn;
 
   leds_on(LEDS_RED);
   memset(buf, 0, MAX_PAYLOAD_LEN);
@@ -112,12 +112,12 @@ timeout_handler(void)
 PROCESS_THREAD(udp_client_process, ev, data)
 {
   static struct etimer et;
-  uip_ipaddr_t ipaddr;
-
+  static uip_ipaddr_t ipaddr;
+  memset(&ipaddr,0,sizeof(uip_ipaddr_t));
   PROCESS_BEGIN();
   PRINTF("UDP client process started\n");
 
-  uip_ip6addr(&ipaddr, 0xfe80, 0, 0, 0, 0x0215, 0x2000, 0x0002, 0x2145);
+  uip_ip6addr(&ipaddr, 0xfe80, 0, 0, 0, 0x0212, 0x4b00, 0x010b, 0xd8c0);
   /* new connection with remote host */
   l_conn = udp_new(&ipaddr, UIP_HTONS(3000), NULL);
   if(!l_conn) {
@@ -130,7 +130,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
   PRINTF(" local/remote port %u/%u\n",
          UIP_HTONS(l_conn->lport), UIP_HTONS(l_conn->rport));
 
-  uip_ip6addr(&ipaddr, 0xaaaa, 0, 0, 0, 0x0215, 0x2000, 0x0002, 0x2145);
+  uip_ip6addr(&ipaddr, 0xaaaa, 0, 0, 0, 0x0212, 0x4b00, 0x010b, 0xd8c0);
   g_conn = udp_new(&ipaddr, UIP_HTONS(3000), NULL);
   if(!g_conn) {
     PRINTF("udp_new g_conn error.\n");

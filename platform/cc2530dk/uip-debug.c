@@ -40,6 +40,10 @@
 #include "net/uip-debug.h"
 #include "debug.h"
 /*---------------------------------------------------------------------------*/
+void uip_log(char *msg)
+{
+  putstring(msg);
+}
 void
 uip_debug_ipaddr_print(const uip_ipaddr_t *addr)
 {
