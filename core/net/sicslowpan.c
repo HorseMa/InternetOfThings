@@ -277,7 +277,9 @@ rime_sniffer_remove(struct rime_sniffer *s)
 static void
 set_packet_attrs()
 {
-  int c = 0;
+  static int c;
+
+  c = 0;
   /* set protocol in NETWORK_ID */
   packetbuf_set_attr(PACKETBUF_ATTR_NETWORK_ID, UIP_IP_BUF->proto);
 
@@ -362,7 +364,7 @@ addr_context_lookup_by_prefix(uip_ipaddr_t *ipaddr)
 {
 /* Remove code to avoid warnings and save flash if no context is used */
 #if SICSLOWPAN_CONF_MAX_ADDR_CONTEXTS > 0
-  int i;
+  static int i;
   for(i = 0; i < SICSLOWPAN_CONF_MAX_ADDR_CONTEXTS; i++) {
     if((addr_contexts[i].used == 1) &&
        uip_ipaddr_prefixcmp(&addr_contexts[i].prefix, ipaddr, 64)) {
@@ -379,7 +381,7 @@ addr_context_lookup_by_number(uint8_t number)
 {
 /* Remove code to avoid warnings and save flash if no context is used */ 
 #if SICSLOWPAN_CONF_MAX_ADDR_CONTEXTS > 0
-  int i;
+  static int i;
   for(i = 0; i < SICSLOWPAN_CONF_MAX_ADDR_CONTEXTS; i++) {
     if((addr_contexts[i].used == 1) &&
        addr_contexts[i].number == number) {
@@ -419,8 +421,11 @@ static void
 uncompress_addr(uip_ipaddr_t *ipaddr, uint8_t const prefix[],
                 uint8_t pref_post_count, uip_lladdr_t *lladdr)
 {
-  uint8_t prefcount = pref_post_count >> 4;
-  uint8_t postcount = pref_post_count & 0x0f;
+  static uint8_t prefcount;
+  static uint8_t postcount;
+	
+  prefcount = pref_post_count >> 4;
+  postcount = pref_post_count & 0x0f;
   /* full nibble 15 => 16 */
   prefcount = prefcount == 15 ? 16 : prefcount;
   postcount = postcount == 15 ? 16 : postcount;
@@ -488,12 +493,13 @@ uncompress_addr(uip_ipaddr_t *ipaddr, uint8_t const prefix[],
 static void
 compress_hdr_hc06(rimeaddr_t *rime_destaddr)
 {
-  uint8_t tmp, iphc0, iphc1;
+  static uint8_t tmp, iphc0, iphc1;
 #if DEBUG
-  { uint16_t ndx;
+  { static uint16_t ndx;
     PRINTF("before compression (%d): ", UIP_IP_BUF->len[1]);
     for(ndx = 0; ndx < UIP_IP_BUF->len[1] + 40; ndx++) {
-      uint8_t data = ((uint8_t *) (UIP_IP_BUF))[ndx];
+      static uint8_t data;
+      data = ((uint8_t *) (UIP_IP_BUF))[ndx];
       PRINTF("%02x", data);
     }
     PRINTF("\n");
@@ -781,7 +787,7 @@ compress_hdr_hc06(rimeaddr_t *rime_destaddr)
 static void
 uncompress_hdr_hc06(uint16_t ip_len)
 {
-  uint8_t tmp, iphc0, iphc1;
+  static uint8_t tmp, iphc0, iphc1;
   /* at least two byte will be used for the encoding */
   hc06_ptr = rime_ptr + rime_hdr_len + 2;
 
@@ -855,7 +861,8 @@ uncompress_hdr_hc06(uint16_t ip_len)
 
   /* context based compression */
   if(iphc1 & SICSLOWPAN_IPHC_SAC) {
-    uint8_t sci = (iphc1 & SICSLOWPAN_IPHC_CID) ?
+    static uint8_t sci;
+    sci = (iphc1 & SICSLOWPAN_IPHC_CID) ?
       RIME_IPHC_BUF[2] >> 4 : 0;
 
     /* Source address - check context != NULL only if SAM bits are != 0*/
@@ -891,7 +898,9 @@ uncompress_hdr_hc06(uint16_t ip_len)
       /* DAM_01:  48 bits FFXX::00XX:XXXX:XXXX */
       /* DAM_10:  32 bits FFXX::00XX:XXXX */
       /* DAM_11:   8 bits FF02::00XX */
-      uint8_t prefix[] = {0xff, 0x02};
+      static uint8_t prefix[2];
+      prefix[0] = 0xff;
+      prefix[1] = 0x02;
       if(tmp > 0 && tmp < 3) {
         prefix[1] = *hc06_ptr;
         hc06_ptr++;
@@ -904,7 +913,8 @@ uncompress_hdr_hc06(uint16_t ip_len)
     /* no multicast */
     /* Context based */
     if(iphc1 & SICSLOWPAN_IPHC_DAC) {
-      uint8_t dci = (iphc1 & SICSLOWPAN_IPHC_CID) ?
+      static uint8_t dci;
+      dci = (iphc1 & SICSLOWPAN_IPHC_CID) ?
 	RIME_IPHC_BUF[2] & 0x0f : 0;
       context = addr_context_lookup_by_number(dci);
 
@@ -929,7 +939,7 @@ uncompress_hdr_hc06(uint16_t ip_len)
   if((iphc0 & SICSLOWPAN_IPHC_NH_C)) {
     /* The next header is compressed, NHC is following */
     if((*hc06_ptr & SICSLOWPAN_NHC_UDP_MASK) == SICSLOWPAN_NHC_UDP_ID) {
-      uint8_t checksum_compressed;
+      static uint8_t checksum_compressed;
       SICSLOWPAN_IP_BUF->proto = UIP_PROTO_UDP;
       checksum_compressed = *hc06_ptr & SICSLOWPAN_NHC_UDP_CHECKSUMC;
       PRINTF("IPHC: Incoming header value: %i\n", *hc06_ptr);
@@ -1356,14 +1366,16 @@ send_packet(rimeaddr_t *dest)
 static uint8_t
 output(uip_lladdr_t *localdest)
 {
-  int framer_hdrlen;
+  static int framer_hdrlen;
 
   /* The MAC address of the destination of the packet */
   static rimeaddr_t dest;
 
   /* Number of bytes processed. */
-  uint16_t processed_ip_out_len;
+  static uint16_t processed_ip_out_len;
 
+  framer_hdrlen = 0;
+  processed_ip_out_len = 0;
   /* init */
   uncomp_hdr_len = 0;
   rime_hdr_len = 0;
@@ -1449,7 +1461,7 @@ output(uip_lladdr_t *localdest)
 
   if((int)uip_len - (int)uncomp_hdr_len > (int)MAC_MAX_PAYLOAD - framer_hdrlen - (int)rime_hdr_len) {
 #if SICSLOWPAN_CONF_FRAG
-    struct queuebuf *q;
+    static struct queuebuf *q;
     /*
      * The outbound IPv6 packet is too large to fit into a single 15.4
      * packet, so we fragment it into multiple packets and send them.
@@ -1585,16 +1597,22 @@ static void
 input(void)
 {
   /* size of the IP packet (read from fragment) */
-  uint16_t frag_size = 0;
+  static uint16_t frag_size;
   /* offset of the fragment in the IP packet */
-  uint8_t frag_offset = 0;
-  uint8_t is_fragment = 0;
+  static uint8_t frag_offset;
+  static uint8_t is_fragment;
 #if SICSLOWPAN_CONF_FRAG
   /* tag of the fragment */
-  uint16_t frag_tag = 0;
-  uint8_t first_fragment = 0, last_fragment = 0;
+  static uint16_t frag_tag;
+  static uint8_t first_fragment, last_fragment;
+
+  frag_tag = 0;
+  first_fragment = 0; last_fragment = 0;
 #endif /*SICSLOWPAN_CONF_FRAG*/
 
+  frag_size = 0;
+  frag_offset = 0;
+  is_fragment = 0;
   /* init */
   uncomp_hdr_len = 0;
   rime_hdr_len = 0;
@@ -1764,7 +1782,8 @@ input(void)
 
   /* Sanity-check size of incoming packet to avoid buffer overflow */
   {
-    int req_size = UIP_LLH_LEN + uncomp_hdr_len + (uint16_t)(frag_offset << 3)
+    static int req_size;
+    req_size = UIP_LLH_LEN + uncomp_hdr_len + (uint16_t)(frag_offset << 3)
         + rime_payload_len;
     if(req_size > sizeof(sicslowpan_buf)) {
       PRINTF(
@@ -1817,10 +1836,12 @@ input(void)
 
 #if DEBUG
     {
-      uint16_t ndx;
+      static uint16_t ndx;
       PRINTF("after decompression %u:", SICSLOWPAN_IP_BUF->len[1]);
       for (ndx = 0; ndx < SICSLOWPAN_IP_BUF->len[1] + 40; ndx++) {
-        uint8_t data = ((uint8_t *) (SICSLOWPAN_IP_BUF))[ndx];
+        static uint8_t data;
+
+        data = ((uint8_t *) (SICSLOWPAN_IP_BUF))[ndx];
         PRINTF("%02x", data);
       }
       PRINTF("\n");
@@ -1871,7 +1892,7 @@ sicslowpan_init(void)
 
 #if SICSLOWPAN_CONF_MAX_ADDR_CONTEXTS > 1
   {
-    int i;
+    static int i;
     for(i = 1; i < SICSLOWPAN_CONF_MAX_ADDR_CONTEXTS; i++) {
 #ifdef SICSLOWPAN_CONF_ADDR_CONTEXT_1
 	  if (i==1) {

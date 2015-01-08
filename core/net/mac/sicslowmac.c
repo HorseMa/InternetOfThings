@@ -84,7 +84,8 @@ static uint16_t mac_src_pan_id = IEEE802154_PANID;
 static int
 is_broadcast_addr(uint8_t mode, uint8_t *addr)
 {
-  int i = mode == FRAME802154_SHORTADDRMODE ? 2 : 8;
+  static int i;
+  i = mode == FRAME802154_SHORTADDRMODE ? 2 : 8;
   while(i-- > 0) {
     if(addr[i] != 0xff) {
       return 0;
@@ -157,7 +158,7 @@ send_packet(mac_callback_t sent, void *ptr)
   params.payload_len = packetbuf_datalen();
   len = frame802154_hdrlen(&params);
   if(packetbuf_hdralloc(len)) {
-    int ret;
+    static int ret;
     frame802154_create(&params, packetbuf_hdrptr(), len);
 
     PRINTF("6MAC-UT: %2X", params.fcf.frame_type);

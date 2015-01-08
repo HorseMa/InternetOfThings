@@ -113,7 +113,9 @@ static void transmit_packet_list(void *ptr);
 static struct neighbor_queue *
 neighbor_queue_from_addr(const rimeaddr_t *addr)
 {
-  struct neighbor_queue *n = list_head(neighbor_list);
+  static struct neighbor_queue *n;
+	
+  n = list_head(neighbor_list);
   while(n != NULL) {
     if(rimeaddr_cmp(&n->addr, addr)) {
       return n;
@@ -126,7 +128,7 @@ neighbor_queue_from_addr(const rimeaddr_t *addr)
 static clock_time_t
 default_timebase(void)
 {
-  clock_time_t time;
+  static clock_time_t time;
   /* The retransmission time must be proportional to the channel
      check interval of the underlying radio duty cycling layer. */
   time = NETSTACK_RDC.channel_check_interval();
@@ -143,9 +145,11 @@ default_timebase(void)
 static void
 transmit_packet_list(void *ptr)
 {
-  struct neighbor_queue *n = ptr;
+  static struct neighbor_queue *n;
+  n = ptr;
   if(n) {
-    struct rdc_buf_list *q = list_head(n->queued_packet_list);
+    static struct rdc_buf_list *q;
+    q = list_head(n->queued_packet_list);
     if(q != NULL) {
       PRINTF("csma: preparing number %d %p, queue len %d\n", n->transmissions, q,
           list_length(n->queued_packet_list));
@@ -187,15 +191,23 @@ free_packet(struct neighbor_queue *n, struct rdc_buf_list *p)
 static void
 packet_sent(void *ptr, int status, int num_transmissions)
 {
-  struct neighbor_queue *n;
-  struct rdc_buf_list *q;
-  struct qbuf_metadata *metadata;
-  clock_time_t time = 0;
-  mac_callback_t sent;
-  void *cptr;
-  int num_tx;
-  int backoff_transmissions;
+  static struct neighbor_queue *n;
+  static struct rdc_buf_list *q;
+  static struct qbuf_metadata *metadata;
+  static clock_time_t time;
+  static mac_callback_t sent;
+  static void *cptr;
+  static int num_tx;
+  static int backoff_transmissions;
 
+  n = NULL;
+  q = NULL;
+  metadata = NULL;
+  time = 0;
+  sent = NULL;
+  cptr = NULL;
+  num_tx = 0;
+  backoff_transmissions = 0;
   n = ptr;
   if(n == NULL) {
     return;
@@ -292,10 +304,13 @@ packet_sent(void *ptr, int status, int num_transmissions)
 static void
 send_packet(mac_callback_t sent, void *ptr)
 {
-  struct rdc_buf_list *q;
-  struct neighbor_queue *n;
+  static struct rdc_buf_list *q;
+  static struct neighbor_queue *n;
   static uint16_t seqno;
   const rimeaddr_t *addr = packetbuf_addr(PACKETBUF_ADDR_RECEIVER);
+
+  q = NULL;
+  n = NULL;
 
   if(seqno == 0) {
     /* PACKETBUF_ATTR_MAC_SEQNO cannot be zero, due to a pecuilarity
@@ -330,7 +345,9 @@ send_packet(mac_callback_t sent, void *ptr)
       if(q->ptr != NULL) {
 	q->buf = queuebuf_new_from_packetbuf();
 	if(q->buf != NULL) {
-	  struct qbuf_metadata *metadata = (struct qbuf_metadata *)q->ptr;
+	  static struct qbuf_metadata *metadata;
+
+	  metadata = (struct qbuf_metadata *)q->ptr;
 	  /* Neighbor and packet successfully allocated */
 	  if(packetbuf_attr(PACKETBUF_ATTR_MAX_MAC_TRANSMISSIONS) == 0) {
 	    /* Use default configuration for max transmissions */
