@@ -18,7 +18,7 @@ ifndef CONTIKI_TARGET_MAIN
 CONTIKI_TARGET_MAIN = contiki-wismote-main.c
 endif
 
-ifeq ($(UIP_CONF_IPV6),1)
+ifdef UIP_CONF_IPV6
 CFLAGS += -DWITH_UIP6=1
 endif
 

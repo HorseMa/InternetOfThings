@@ -357,12 +357,4 @@ public class TR1001Radio extends Radio implements USARTListener, CustomDataRadio
     /* TODO Implement me */
     return true;
   }
-
-  public boolean canReceiveFrom(CustomDataRadio radio) {
-    if (radio.getClass().equals(this.getClass())) {
-      return true;
-    }
-    return false;
-  }
-
 }

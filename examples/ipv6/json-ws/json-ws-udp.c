@@ -75,7 +75,9 @@ json_ws_udp_setup(const char *host, uint16_t port)
   ipaddr = &server_ipaddr;
   if(uiplib_ipaddrconv(host, &server_ipaddr) == 0) {
 #if 0 && UIP_UDP
-    if(resolv_lookup(host, &ipaddr) != RESOLV_STATUS_CACHED) {
+    ipaddr = resolv_lookup(host);
+
+    if(ipaddr == NULL) {
       return 0;
     }
 #else /* UIP_UDP */

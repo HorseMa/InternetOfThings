@@ -28,7 +28,7 @@ void halInternalResetWatchDog(void)
   WDOG_RESET = 1;
 }
 
-void halInternalDisableWatchDog(uint8_t magicKey)
+void halInternalDisableWatchDog(int8u magicKey)
 {
   if (magicKey == MICRO_DISABLE_WATCH_DOG_KEY) {
     WDOG_KEY = 0xDEAD;
@@ -45,33 +45,33 @@ boolean halInternalWatchDogEnabled(void)
   }
 }
 
-void halGpioConfig(uint32_t io, uint32_t config)
+void halGpioConfig(int32u io, int32u config)
 {
-  static volatile uint32_t *const configRegs[] = 
-    { (volatile uint32_t *)GPIO_PACFGL_ADDR,
-      (volatile uint32_t *)GPIO_PACFGH_ADDR,
-      (volatile uint32_t *)GPIO_PBCFGL_ADDR,
-      (volatile uint32_t *)GPIO_PBCFGH_ADDR,
-      (volatile uint32_t *)GPIO_PCCFGL_ADDR,
-      (volatile uint32_t *)GPIO_PCCFGH_ADDR };
-  uint32_t portcfg;
+  static volatile int32u *const configRegs[] = 
+    { (volatile int32u *)GPIO_PACFGL_ADDR,
+      (volatile int32u *)GPIO_PACFGH_ADDR,
+      (volatile int32u *)GPIO_PBCFGL_ADDR,
+      (volatile int32u *)GPIO_PBCFGH_ADDR,
+      (volatile int32u *)GPIO_PCCFGL_ADDR,
+      (volatile int32u *)GPIO_PCCFGH_ADDR };
+  int32u portcfg;
   portcfg = *configRegs[io/4];                // get current config                   
   portcfg = portcfg & ~((0xF)<<((io&3)*4));   // mask out config of this pin
   *configRegs[io/4] = portcfg | (config <<((io&3)*4));
 }
 
-void halGpioSet(uint32_t gpio, boolean value)
+void halGpioSet(int32u gpio, boolean value)
 {
   if(gpio/8 < 3) {
     if (value) {
-      *((volatile uint32_t *)(GPIO_PxSET_BASE+(GPIO_Px_OFFSET*(gpio/8)))) = BIT(gpio&7);
+      *((volatile int32u *)(GPIO_PxSET_BASE+(GPIO_Px_OFFSET*(gpio/8)))) = BIT(gpio&7);
     } else {
-      *((volatile uint32_t *)(GPIO_PxCLR_BASE+(GPIO_Px_OFFSET*(gpio/8)))) = BIT(gpio&7);
+      *((volatile int32u *)(GPIO_PxCLR_BASE+(GPIO_Px_OFFSET*(gpio/8)))) = BIT(gpio&7);
     }
   }
 }
 
-uint16_t halInternalStartSystemTimer(void)
+int16u halInternalStartSystemTimer(void)
 {
   //Since the SleepTMR is the only timer maintained during deep sleep, it is
   //used as the System Timer (RTC).  We maintain a 32 bit hardware timer

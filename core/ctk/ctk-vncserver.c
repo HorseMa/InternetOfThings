@@ -1077,8 +1077,7 @@ ctk_vncserver_appcall(void *state)
 /*-----------------------------------------------------------------------------------*/
 PROCESS_THREAD(ctk_vncserver_process, ev, data)
 {
-  static int i;
-  i = 0;
+  int i;
   
   PROCESS_BEGIN();
 

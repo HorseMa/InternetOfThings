@@ -40,24 +40,11 @@
 #include "net/mac/phase.h"
 #include "net/packetbuf.h"
 #include "sys/clock.h"
+#include "lib/memb.h"
 #include "sys/ctimer.h"
 #include "net/queuebuf.h"
-#include "net/nbr-table.h"
-
-#if PHASE_CONF_DRIFT_CORRECT
-#define PHASE_DRIFT_CORRECT PHASE_CONF_DRIFT_CORRECT
-#else
-#define PHASE_DRIFT_CORRECT 0
-#endif
-
-struct phase {
-  rtimer_clock_t time;
-#if PHASE_DRIFT_CORRECT
-  rtimer_clock_t drift;
-#endif
-  uint8_t noacks;
-  struct timer noacks_timer;
-};
+#include "dev/watchdog.h"
+#include "dev/leds.h"
 
 struct phase_queueitem {
   struct ctimer timer;
@@ -75,7 +62,6 @@ struct phase_queueitem {
 #define MAX_NOACKS_TIME       CLOCK_SECOND * 30
 
 MEMB(queued_packets_memb, struct phase_queueitem, PHASE_QUEUESIZE);
-NBR_TABLE(struct phase, nbr_phase);
 
 #define DEBUG 0
 #if DEBUG
@@ -87,14 +73,38 @@ NBR_TABLE(struct phase, nbr_phase);
 #define PRINTDEBUG(...)
 #endif
 /*---------------------------------------------------------------------------*/
+struct phase *
+find_neighbor(const struct phase_list *list, const rimeaddr_t *addr)
+{
+  struct phase *e;
+  for(e = list_head(*list->list); e != NULL; e = list_item_next(e)) {
+    if(rimeaddr_cmp(addr, &e->neighbor)) {
+      return e;
+    }
+  }
+  return NULL;
+}
+/*---------------------------------------------------------------------------*/
 void
-phase_update(const rimeaddr_t *neighbor, rtimer_clock_t time,
+phase_remove(const struct phase_list *list, const rimeaddr_t *neighbor)
+{
+  struct phase *e;
+  e = find_neighbor(list, neighbor);
+  if(e != NULL) {
+    list_remove(*list->list, e);
+    memb_free(list->memb, e);
+  }
+}
+/*---------------------------------------------------------------------------*/
+void
+phase_update(const struct phase_list *list,
+             const rimeaddr_t *neighbor, rtimer_clock_t time,
              int mac_status)
 {
   struct phase *e;
 
   /* If we have an entry for this neighbor already, we renew it. */
-  e = nbr_table_get_from_lladdr(nbr_phase, neighbor);
+  e = find_neighbor(list, neighbor);
   if(e != NULL) {
     if(mac_status == MAC_TX_OK) {
 #if PHASE_DRIFT_CORRECT
@@ -113,7 +123,8 @@ phase_update(const rimeaddr_t *neighbor, rtimer_clock_t time,
       }
       if(e->noacks >= MAX_NOACKS || timer_expired(&e->noacks_timer)) {
         PRINTF("drop %d\n", neighbor->u8[0]);
-        nbr_table_remove(nbr_phase, e);
+        list_remove(*list->list, e);
+        memb_free(list->memb, e);
         return;
       }
     } else if(mac_status == MAC_TX_OK) {
@@ -122,14 +133,20 @@ phase_update(const rimeaddr_t *neighbor, rtimer_clock_t time,
   } else {
     /* No matching phase was found, so we allocate a new one. */
     if(mac_status == MAC_TX_OK && e == NULL) {
-      e = nbr_table_add_lladdr(nbr_phase, neighbor);
-      if(e) {
-        e->time = time;
+      e = memb_alloc(list->memb);
+      if(e == NULL) {
+        PRINTF("phase alloc NULL\n");
+        /* We could not allocate memory for this phase, so we drop
+           the last item on the list and reuse it for our phase. */
+        e = list_chop(*list->list);
+      }
+      rimeaddr_copy(&e->neighbor, neighbor);
+      e->time = time;
 #if PHASE_DRIFT_CORRECT
       e->drift = 0;
 #endif
       e->noacks = 0;
-      }
+      list_push(*list->list, e);
     }
   }
 }
@@ -151,7 +168,8 @@ send_packet(void *ptr)
 }
 /*---------------------------------------------------------------------------*/
 phase_status_t
-phase_wait(const rimeaddr_t *neighbor, rtimer_clock_t cycle_time,
+phase_wait(struct phase_list *list,
+           const rimeaddr_t *neighbor, rtimer_clock_t cycle_time,
            rtimer_clock_t guard_time,
            mac_callback_t mac_callback, void *mac_callback_ptr,
            struct rdc_buf_list *buf_list)
@@ -162,7 +180,7 @@ phase_wait(const rimeaddr_t *neighbor, rtimer_clock_t cycle_time,
      phase for this particular neighbor. If so, we can compute the
      time for the next expected phase and setup a ctimer to switch on
      the radio just before the phase. */
-  e = nbr_table_get_from_lladdr(nbr_phase, neighbor);
+  e = find_neighbor(list, neighbor);
   if(e != NULL) {
     rtimer_clock_t wait, now, expected, sync;
     clock_time_t ctimewait;
@@ -224,12 +242,15 @@ phase_wait(const rimeaddr_t *neighbor, rtimer_clock_t cycle_time,
         p->buf_list = buf_list;
         ctimer_set(&p->timer, ctimewait, send_packet, p);
         return PHASE_DEFERRED;
+      } else {
+        memb_free(&queued_packets_memb, p);
       }
     }
 
     expected = now + wait - guard_time;
     if(!RTIMER_CLOCK_LT(expected, now)) {
       /* Wait until the receiver is expected to be awake */
+//    printf("%d ",expected%cycle_time);  //for spreadsheet export
       while(RTIMER_CLOCK_LT(RTIMER_NOW(), expected));
     }
     return PHASE_SEND_NOW;
@@ -238,9 +259,10 @@ phase_wait(const rimeaddr_t *neighbor, rtimer_clock_t cycle_time,
 }
 /*---------------------------------------------------------------------------*/
 void
-phase_init(void)
+phase_init(struct phase_list *list)
 {
+  list_init(*list->list);
+  memb_init(list->memb);
   memb_init(&queued_packets_memb);
-  nbr_table_register(nbr_phase, NULL);
 }
 /*---------------------------------------------------------------------------*/

@@ -69,9 +69,7 @@ public class SentillaUSBMoteType extends AbstractMspMoteType {
         return new SentillaUSBMote(this, simulation);
     }
 
-    public Class<? extends MoteInterface>[] getDefaultMoteInterfaceClasses() {
-  	  return getAllMoteInterfaceClasses();
-    }
+    @Override
     public Class<? extends MoteInterface>[] getAllMoteInterfaceClasses() {
         @SuppressWarnings("unchecked")
         Class<? extends MoteInterface>[] list = createMoteInterfaceList(

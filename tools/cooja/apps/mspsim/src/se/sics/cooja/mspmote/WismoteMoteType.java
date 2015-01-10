@@ -69,9 +69,7 @@ public class WismoteMoteType extends AbstractMspMoteType {
         return new WismoteMote(this, simulation);
     }
 
-    public Class<? extends MoteInterface>[] getDefaultMoteInterfaceClasses() {
-  	  return getAllMoteInterfaceClasses();
-    }
+    @Override
     public Class<? extends MoteInterface>[] getAllMoteInterfaceClasses() {
         @SuppressWarnings("unchecked")
         Class<? extends MoteInterface>[] list = createMoteInterfaceList(

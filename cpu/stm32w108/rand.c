@@ -1,9 +1,3 @@
-/**
- * \addtogroup mbxxx-platform
- *
- * @{
- */
-
 /*
  * Copyright (c) 2010, STMicroelectronics.
  * All rights reserved.
@@ -33,14 +27,17 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ * This file is part of the Contiki OS
+ *
  */
-
+/*---------------------------------------------------------------------------*/
 /**
 * \file
 *			Random number functions for STM32W.
 * \author
 *			Salvatore Pitrulli <salvopitru@users.sourceforge.net>
 */
+/*---------------------------------------------------------------------------*/
 
 #include "dev/stm32w-radio.h"
 #include "lib/random.h"
@@ -49,20 +46,18 @@
 #warning "RANDOM_RAND_MAX is not defined as 65535."
 #endif
 
-/*--------------------------------------------------------------------------*/
-int
-rand(void)
+int rand(void)
 {
-  uint16_t rand_num;
-  ST_RadioGetRandomNumbers(&rand_num, 1);
-  return (int)rand_num;
+	uint16_t rand_num;
+
+	ST_RadioGetRandomNumbers(&rand_num, 1);
+
+	return (int)rand_num;
 }
-/*--------------------------------------------------------------------------*/
+
 /*
  *	It does nothing, since the rand already generates true random numbers.
  */
-void
-srand(unsigned int seed)
+void srand(unsigned int seed)
 {
 }
-/** @} */

@@ -10,16 +10,6 @@
 #include "project-conf.h"
 #endif /* PROJECT_CONF_H */
 
-/*
- * Build for SmartRF05EB+CC2530EM by default.
- * This define needs to have its final value before inclusion of models.h
- */
-#define UIP_CONF_LOGGING 0
-
-#ifndef MODELS_CONF_CC2531_USB_STICK
-#define MODELS_CONF_CC2531_USB_STICK 0
-#endif
-
 #include "models.h"
 
 /*
@@ -72,12 +62,6 @@
 #define USB_SERIAL_CONF_BUFFERED 1
 #endif
 
-#define SLIP_RADIO_CONF_NO_PUTCHAR 1
-
-#if defined (UIP_FALLBACK_INTERFACE) || defined (CMD_CONF_OUTPUT)
-#define SLIP_ARCH_CONF_ENABLE      1
-#endif
-
 /* Are we a SLIP bridge? */
 #if SLIP_ARCH_CONF_ENABLE
 /* Make sure the UART is enabled, with interrupts */
@@ -85,6 +69,7 @@
 #undef UART0_CONF_WITH_INPUT
 #define UART0_CONF_ENABLE  1
 #define UART0_CONF_WITH_INPUT 1
+#define UIP_FALLBACK_INTERFACE slip_interface
 #endif
 
 /* Output all captured frames over the UART in hexdump format */
@@ -166,14 +151,11 @@
 #endif /* UIP_CONF_IPV6 */
 
 /* Network Stack */
-//#define UIP_CONF_IPV6 1
-#ifndef NETSTACK_CONF_NETWORK
 #if UIP_CONF_IPV6
 #define NETSTACK_CONF_NETWORK sicslowpan_driver
 #else
 #define NETSTACK_CONF_NETWORK rime_driver
-#endif /* UIP_CONF_IPV6 */
-#endif /* NETSTACK_CONF_NETWORK */
+#endif
 
 #ifndef NETSTACK_CONF_MAC
 #define NETSTACK_CONF_MAC     csma_driver
@@ -189,10 +171,7 @@
 #define NETSTACK_CONF_RDC_CHANNEL_CHECK_RATE 8
 #endif
 
-#ifndef NETSTACK_CONF_FRAMER
 #define NETSTACK_CONF_FRAMER  framer_802154
-#endif
-
 #define NETSTACK_CONF_RADIO   cc2530_rf_driver
 
 /* RF Config */
@@ -224,28 +203,31 @@
 #define UIP_CONF_ROUTER                      1
 #endif
 
+/* Prevent SDCC compile error when UIP_CONF_ROUTER == 0 */
+#if !UIP_CONF_ROUTER
+#define UIP_CONF_DS6_AADDR_NBU               1
+#endif
+
 #define UIP_CONF_ND6_SEND_RA                 0
 #define UIP_CONF_IP_FORWARD                  0
 #define RPL_CONF_STATS                       0
 #define RPL_CONF_MAX_DAG_ENTRIES             1
 #ifndef RPL_CONF_OF
-#define RPL_CONF_OF rpl_mrhof
+#define RPL_CONF_OF rpl_of_etx
 #endif
 
 #define UIP_CONF_ND6_REACHABLE_TIME     600000
 #define UIP_CONF_ND6_RETRANS_TIMER       10000
 
-#ifndef NBR_TABLE_CONF_MAX_NEIGHBORS
-#define NBR_TABLE_CONF_MAX_NEIGHBORS                 4 /* Handle n Neighbors */
+#ifndef UIP_CONF_DS6_NBR_NBU
+#define UIP_CONF_DS6_NBR_NBU                 4 /* Handle n Neighbors */
 #endif
-#ifndef UIP_CONF_MAX_ROUTES
-#define UIP_CONF_MAX_ROUTES               4 /* Handle n Routes */
+#ifndef UIP_CONF_DS6_ROUTE_NBU
+#define UIP_CONF_DS6_ROUTE_NBU               4 /* Handle n Routes */
 #endif
 
 /* uIP */
-#ifndef UIP_CONF_BUFFER_SIZE
 #define UIP_CONF_BUFFER_SIZE               240
-#endif
 #define UIP_CONF_IPV6_QUEUE_PKT              0
 #define UIP_CONF_IPV6_CHECKS                 1
 #define UIP_CONF_IPV6_REASSEMBLY             0
@@ -265,10 +247,7 @@
 }
 
 #define MAC_CONF_CHANNEL_CHECK_RATE          8
-
-#ifndef QUEUEBUF_CONF_NUM
 #define QUEUEBUF_CONF_NUM                    6
-#endif
 
 #else /* UIP_CONF_IPV6 */
 /* Network setup for non-IPv6 (rime). */
@@ -277,10 +256,5 @@
 #define RIME_CONF_NO_POLITE_ANNOUCEMENTS     0
 #define QUEUEBUF_CONF_NUM                    8
 #endif /* UIP_CONF_IPV6 */
-
-/* Prevent SDCC compile error when UIP_CONF_ROUTER == 0 */
-#if !UIP_CONF_ROUTER
-#define UIP_CONF_DS6_AADDR_NBU               1
-#endif
 
 #endif /* __CONTIKI_CONF_H__ */

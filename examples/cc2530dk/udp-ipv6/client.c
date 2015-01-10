@@ -81,7 +81,7 @@ static void
 timeout_handler(void)
 {
   static int seq_id;
-  static struct uip_udp_conn *this_conn;
+  struct uip_udp_conn *this_conn;
 
   leds_on(LEDS_RED);
   memset(buf, 0, MAX_PAYLOAD_LEN);
@@ -112,8 +112,8 @@ timeout_handler(void)
 PROCESS_THREAD(udp_client_process, ev, data)
 {
   static struct etimer et;
-  static uip_ipaddr_t ipaddr;
-  memset(&ipaddr,0,sizeof(uip_ipaddr_t));
+  uip_ipaddr_t ipaddr;
+
   PROCESS_BEGIN();
   PRINTF("UDP client process started\n");
 

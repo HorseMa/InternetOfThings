@@ -31,8 +31,6 @@
  */
 
 #include "contiki-net.h"
-#include "net/uip.h"
-#include "net/uipopt.h"
 
 #if UIP_CONF_IPV6
 #include "tapdev6.h"
@@ -61,6 +59,7 @@ tapdev_output(void)
 static void
 pollhandler(void)
 {
+  process_poll(&tapdev_process);
   uip_len = tapdev_poll();
 
   if(uip_len > 0) {

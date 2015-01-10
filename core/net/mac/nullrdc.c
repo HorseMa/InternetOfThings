@@ -42,12 +42,7 @@
 #include "net/packetbuf.h"
 #include "net/queuebuf.h"
 #include "net/netstack.h"
-#include "net/rime/rimestats.h"
 #include <string.h>
-
-#if CONTIKI_TARGET_COOJA
-#include "lib/simEnvChange.h"
-#endif /* CONTIKI_TARGET_COOJA */
 
 #define DEBUG 0
 #if DEBUG
@@ -83,29 +78,10 @@
 #include "sys/rtimer.h"
 #include "dev/watchdog.h"
 
-#ifdef NULLRDC_CONF_ACK_WAIT_TIME
-#define ACK_WAIT_TIME NULLRDC_CONF_ACK_WAIT_TIME
-#else /* NULLRDC_CONF_ACK_WAIT_TIME */
-#define ACK_WAIT_TIME                      RTIMER_SECOND / 2500
-#endif /* NULLRDC_CONF_ACK_WAIT_TIME */
-#ifdef NULLRDC_CONF_AFTER_ACK_DETECTED_WAIT_TIME
-#define AFTER_ACK_DETECTED_WAIT_TIME NULLRDC_CONF_AFTER_ACK_DETECTED_WAIT_TIME
-#else /* NULLRDC_CONF_AFTER_ACK_DETECTED_WAIT_TIME */
-#define AFTER_ACK_DETECTED_WAIT_TIME       RTIMER_SECOND / 1500
-#endif /* NULLRDC_CONF_AFTER_ACK_DETECTED_WAIT_TIME */
-#endif /* NULLRDC_802154_AUTOACK */
-
-#ifdef NULLRDC_CONF_SEND_802154_ACK
-#define NULLRDC_SEND_802154_ACK NULLRDC_CONF_SEND_802154_ACK
-#else /* NULLRDC_CONF_SEND_802154_ACK */
-#define NULLRDC_SEND_802154_ACK 0
-#endif /* NULLRDC_CONF_SEND_802154_ACK */
-
-#if NULLRDC_SEND_802154_ACK
-#include "net/mac/frame802154.h"
-#endif /* NULLRDC_SEND_802154_ACK */
-
+#define ACK_WAIT_TIME                      RTIMER_SECOND / 1500
+#define AFTER_ACK_DETECTED_WAIT_TIME       1
 #define ACK_LEN 3
+#endif /* NULLRDC_802154_AUTOACK */
 
 #if NULLRDC_802154_AUTOACK || NULLRDC_802154_AUTOACK_HW
 struct seqno {
@@ -116,21 +92,24 @@ struct seqno {
 #ifdef NETSTACK_CONF_MAC_SEQNO_HISTORY
 #define MAX_SEQNOS NETSTACK_CONF_MAC_SEQNO_HISTORY
 #else /* NETSTACK_CONF_MAC_SEQNO_HISTORY */
-#define MAX_SEQNOS 8
+#define MAX_SEQNOS 16
 #endif /* NETSTACK_CONF_MAC_SEQNO_HISTORY */
 
 static struct seqno received_seqnos[MAX_SEQNOS];
 #endif /* NULLRDC_802154_AUTOACK || NULLRDC_802154_AUTOACK_HW */
 
 /*---------------------------------------------------------------------------*/
-static int
-send_one_packet(mac_callback_t sent, void *ptr)
+static void
+send_packet(mac_callback_t sent, void *ptr)
 {
-  static int ret;
-  static int last_sent_ok;
+  uint8_t ret;
+#if NULLRDC_802154_AUTOACK
+  static int is_broadcast;
+  static uint8_t dsn;
+  static rtimer_clock_t wt;
+  static uint8_t ackbuf[ACK_LEN];
+#endif
 
-  last_sent_ok = 0;
-  ret = 0;
   packetbuf_set_addr(PACKETBUF_ADDR_SENDER, &rimeaddr_node_addr);
 #if NULLRDC_802154_AUTOACK || NULLRDC_802154_AUTOACK_HW
   packetbuf_set_attr(PACKETBUF_ATTR_MAC_ACK, 1);
@@ -147,10 +126,6 @@ send_one_packet(mac_callback_t sent, void *ptr)
 #endif /* NETSTACK_ENCRYPT */
 
 #if NULLRDC_802154_AUTOACK
-    static int is_broadcast;
-    static uint8_t dsn;
-
-    is_broadcast = 0;
     dsn = ((uint8_t *)packetbuf_hdrptr())[2] & 0xff;
 
     NETSTACK_RADIO.prepare(packetbuf_hdrptr(), packetbuf_totlen());
@@ -165,61 +140,41 @@ send_one_packet(mac_callback_t sent, void *ptr)
          already received a packet that needs to be read before
          sending with auto ack. */
       ret = MAC_TX_COLLISION;
-    } else {
-      if(!is_broadcast) {
-        RIMESTATS_ADD(reliabletx);
-      }
 
+    } else {
       switch(NETSTACK_RADIO.transmit(packetbuf_totlen())) {
       case RADIO_TX_OK:
         if(is_broadcast) {
           ret = MAC_TX_OK;
         } else {
-          rtimer_clock_t wt;
 
           /* Check for ack */
           wt = RTIMER_NOW();
           watchdog_periodic();
-          while(RTIMER_CLOCK_LT(RTIMER_NOW(), wt + ACK_WAIT_TIME)) {
-#if CONTIKI_TARGET_COOJA
-            simProcessRunValue = 1;
-            cooja_mt_yield();
-#endif /* CONTIKI_TARGET_COOJA */
-          }
+          while(RTIMER_CLOCK_LT(RTIMER_NOW(), wt + ACK_WAIT_TIME));
 
           ret = MAC_TX_NOACK;
           if(NETSTACK_RADIO.receiving_packet() ||
              NETSTACK_RADIO.pending_packet() ||
              NETSTACK_RADIO.channel_clear() == 0) {
-            static int len;
-            static uint8_t ackbuf[ACK_LEN];
+            uint8_t len;
 
-            if(AFTER_ACK_DETECTED_WAIT_TIME > 0) {
-              wt = RTIMER_NOW();
-              watchdog_periodic();
-              while(RTIMER_CLOCK_LT(RTIMER_NOW(),
-                                    wt + AFTER_ACK_DETECTED_WAIT_TIME)) {
-      #if CONTIKI_TARGET_COOJA
-                  simProcessRunValue = 1;
-                  cooja_mt_yield();
-      #endif /* CONTIKI_TARGET_COOJA */
-              }
-            }
+            wt = RTIMER_NOW();
+            watchdog_periodic();
+            while(RTIMER_CLOCK_LT(RTIMER_NOW(),
+                                  wt + AFTER_ACK_DETECTED_WAIT_TIME));
 
             if(NETSTACK_RADIO.pending_packet()) {
               len = NETSTACK_RADIO.read(ackbuf, ACK_LEN);
               if(len == ACK_LEN && ackbuf[2] == dsn) {
                 /* Ack received */
-                RIMESTATS_ADD(ackrx);
                 ret = MAC_TX_OK;
               } else {
                 /* Not an ack or ack not for us: collision */
                 ret = MAC_TX_COLLISION;
               }
             }
-          } else {
-	    PRINTF("nullrdc tx noack\n");
-	  }
+          }
         }
         break;
       case RADIO_TX_COLLISION:
@@ -250,51 +205,21 @@ send_one_packet(mac_callback_t sent, void *ptr)
 
 #endif /* ! NULLRDC_802154_AUTOACK */
   }
-  if(ret == MAC_TX_OK) {
-    last_sent_ok = 1;
-  }
   mac_call_sent_callback(sent, ptr, ret, 1);
-  return last_sent_ok;
-}
-/*---------------------------------------------------------------------------*/
-static void
-send_packet(mac_callback_t sent, void *ptr)
-{
-  send_one_packet(sent, ptr);
 }
 /*---------------------------------------------------------------------------*/
 static void
 send_list(mac_callback_t sent, void *ptr, struct rdc_buf_list *buf_list)
 {
-  while(buf_list != NULL) {
-    /* We backup the next pointer, as it may be nullified by
-     * mac_call_sent_callback() */
-    static struct rdc_buf_list *next;
-    static int last_sent_ok;
-
-    next = buf_list->next;
-    last_sent_ok = 0;
+  if(buf_list != NULL) {
     queuebuf_to_packetbuf(buf_list->buf);
-    last_sent_ok = send_one_packet(sent, ptr);
-
-    /* If packet transmission was not successful, we should back off and let
-     * upper layers retransmit, rather than potentially sending out-of-order
-     * packet fragments. */
-    if(!last_sent_ok) {
-      return;
-    }
-    buf_list = next;
+    send_packet(sent, ptr);
   }
 }
 /*---------------------------------------------------------------------------*/
 static void
 packet_input(void)
 {
-  static int original_datalen;
-  static uint8_t *original_dataptr;
-
-  original_datalen = packetbuf_datalen();
-  original_dataptr = packetbuf_dataptr();
 #ifdef NETSTACK_DECRYPT
     NETSTACK_DECRYPT();
 #endif /* NETSTACK_DECRYPT */
@@ -302,7 +227,7 @@ packet_input(void)
 #if NULLRDC_802154_AUTOACK
   if(packetbuf_datalen() == ACK_LEN) {
     /* Ignore ack packets */
-    PRINTF("nullrdc: ignored ack\n"); 
+    /* PRINTF("nullrdc: ignored ack\n"); */
   } else
 #endif /* NULLRDC_802154_AUTOACK */
   if(NETSTACK_FRAMER.parse() < 0) {
@@ -315,13 +240,10 @@ packet_input(void)
     PRINTF("nullrdc: not for us\n");
 #endif /* NULLRDC_ADDRESS_FILTER */
   } else {
-    static int duplicate;
-
-    int i;
-    duplicate = 0;
 #if NULLRDC_802154_AUTOACK || NULLRDC_802154_AUTOACK_HW
     /* Check for duplicate packet by comparing the sequence number
        of the incoming packet with the last few ones we saw. */
+    int i;
     for(i = 0; i < MAX_SEQNOS; ++i) {
       if(packetbuf_attr(PACKETBUF_ATTR_PACKET_ID) == received_seqnos[i].seqno &&
          rimeaddr_cmp(packetbuf_addr(PACKETBUF_ADDR_SENDER),
@@ -329,41 +251,18 @@ packet_input(void)
         /* Drop the packet. */
         PRINTF("nullrdc: drop duplicate link layer packet %u\n",
                packetbuf_attr(PACKETBUF_ATTR_PACKET_ID));
-        duplicate = 1;
+        return;
       }
     }
-    if(!duplicate) {
-      for(i = MAX_SEQNOS - 1; i > 0; --i) {
-        memcpy(&received_seqnos[i], &received_seqnos[i - 1],
-               sizeof(struct seqno));
-      }
-      received_seqnos[0].seqno = packetbuf_attr(PACKETBUF_ATTR_PACKET_ID);
-      rimeaddr_copy(&received_seqnos[0].sender,
-                    packetbuf_addr(PACKETBUF_ADDR_SENDER));
+    for(i = MAX_SEQNOS - 1; i > 0; --i) {
+      memcpy(&received_seqnos[i], &received_seqnos[i - 1],
+             sizeof(struct seqno));
     }
+    received_seqnos[0].seqno = packetbuf_attr(PACKETBUF_ATTR_PACKET_ID);
+    rimeaddr_copy(&received_seqnos[0].sender,
+                  packetbuf_addr(PACKETBUF_ADDR_SENDER));
 #endif /* NULLRDC_802154_AUTOACK */
-
-#if NULLRDC_SEND_802154_ACK
-    {
-      static frame802154_t info154;
-      memset(&info154,0,sizeof(frame802154_t));
-      frame802154_parse(original_dataptr, original_datalen, &info154);
-      if(info154.fcf.frame_type == FRAME802154_DATAFRAME &&
-         info154.fcf.ack_required != 0 &&
-         rimeaddr_cmp((rimeaddr_t *)&info154.dest_addr,
-                      &rimeaddr_node_addr)) {
-        static uint8_t ackdata[ACK_LEN] = {0, 0, 0};
-
-        ackdata[0] = FRAME802154_ACKFRAME;
-        ackdata[1] = 0;
-        ackdata[2] = info154.seq;
-        NETSTACK_RADIO.send(ackdata, ACK_LEN);
-      }
-    }
-#endif /* NULLRDC_SEND_ACK */
-    if(!duplicate) {
-      NETSTACK_MAC.input();
-    }
+    NETSTACK_MAC.input();
   }
 }
 /*---------------------------------------------------------------------------*/

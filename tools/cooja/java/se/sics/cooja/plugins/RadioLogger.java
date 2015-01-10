@@ -40,24 +40,20 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.Properties;
-import java.util.regex.PatternSyntaxException;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ButtonGroup;
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFileChooser;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -72,12 +68,9 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
-import javax.swing.RowFilter;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
-import javax.swing.table.TableModel;
-import javax.swing.table.TableRowSorter;
 
 import org.apache.log4j.Logger;
 import org.jdom.Element;
@@ -123,11 +116,9 @@ public class RadioLogger extends VisPlugin {
   private JSplitPane splitPane;
   private JTextPane verboseBox = null;
 
-  private boolean formatTimeString = true;
-
   private final static String[] COLUMN_NAMES = {
-    "No.        ",
-    "Time ms",
+    "No.",
+    "Time",
     "From",
     "To",
     "Data"
@@ -135,7 +126,6 @@ public class RadioLogger extends VisPlugin {
 
   private final Simulation simulation;
   private final JTable dataTable;
-  private TableRowSorter<TableModel> logFilter;
   private ArrayList<RadioConnectionLog> connections = new ArrayList<RadioConnectionLog>();
   private RadioMedium radioMedium;
   private Observer radioMediumObserver;
@@ -159,7 +149,7 @@ public class RadioLogger extends VisPlugin {
     JMenu fileMenu = new JMenu("File");
     JMenu editMenu = new JMenu("Edit");
     JMenu analyzerMenu = new JMenu("Analyzer");
-    JMenu payloadMenu = new JMenu("View");
+    JMenu payloadMenu = new JMenu("Payload");
 
     menuBar.add(fileMenu);
     menuBar.add(editMenu);
@@ -179,15 +169,11 @@ public class RadioLogger extends VisPlugin {
     lowpanAnalyzersPcap.add(new IPHCPacketAnalyzer());
     lowpanAnalyzersPcap.add(new IPv6PacketAnalyzer());
     lowpanAnalyzersPcap.add(new ICMPv6Analyzer());
-
     model = new AbstractTableModel() {
 
       private static final long serialVersionUID = 1692207305977527004L;
 
       public String getColumnName(int col) {
-        if (col == COLUMN_TIME && formatTimeString) {
-          return "Time";
-        }
         return COLUMN_NAMES[col];
       }
 
@@ -200,19 +186,10 @@ public class RadioLogger extends VisPlugin {
       }
 
       public Object getValueAt(int row, int col) {
-        if (row < 0 || row >= connections.size()) {
-          return "";
-        }
         RadioConnectionLog conn = connections.get(row);
         if (col == COLUMN_NO) {
-          if (!showDuplicates && conn.hides > 0) {
-            return (String) "" + (row + 1) + "+" + conn.hides;
-          }
-          return (String) "" + (row + 1);
+          return Long.toString(row + 1);
         } else if (col == COLUMN_TIME) {
-          if (formatTimeString) {
-            return LogListener.getFormattedTime(conn.startTime);
-          }
           return Long.toString(conn.startTime / Simulation.MILLISECOND);
         } else if (col == COLUMN_FROM) {
           return "" + conn.connection.getSource().getMote().getID();
@@ -274,19 +251,14 @@ public class RadioLogger extends VisPlugin {
       public String getToolTipText(MouseEvent e) {
         java.awt.Point p = e.getPoint();
         int rowIndex = rowAtPoint(p);
-        if (rowIndex < 0) {
-          return super.getToolTipText(e);
-        }
-        int modelRowIndex = convertRowIndexToModel(rowIndex);
         int colIndex = columnAtPoint(p);
-        int modelColumnIndex = convertColumnIndexToModel(colIndex);
-        if (modelRowIndex < 0 || modelColumnIndex < 0) {
+        int realColumnIndex = convertColumnIndexToModel(colIndex);
+        if (rowIndex < 0 || realColumnIndex < 0) {
           return super.getToolTipText(e);
         }
 
-        /* TODO This entry may represent several hidden connections */
-        RadioConnectionLog conn = connections.get(modelRowIndex);
-        if (modelColumnIndex == COLUMN_TIME) {
+        RadioConnectionLog conn = connections.get(rowIndex);
+        if (realColumnIndex == COLUMN_TIME) {
           return
             "<html>" +
             "Start time (us): " + conn.startTime +
@@ -295,9 +267,9 @@ public class RadioLogger extends VisPlugin {
             "<br><br>" +
             "Duration (us): " + (conn.endTime - conn.startTime) +
             "</html>";
-        } else if (modelColumnIndex == COLUMN_FROM) {
+        } else if (realColumnIndex == COLUMN_FROM) {
           return conn.connection.getSource().getMote().toString();
-        } else if (modelColumnIndex == COLUMN_TO) {
+        } else if (realColumnIndex == COLUMN_TO) {
           Radio[] dests = conn.connection.getDestinations();
           if (dests.length == 0) {
             return "No destinations";
@@ -314,7 +286,7 @@ public class RadioLogger extends VisPlugin {
           }
           tip.append("</html>");
           return tip.toString();
-        } else if (modelColumnIndex == COLUMN_DATA) {
+        } else if (realColumnIndex == COLUMN_DATA) {
           if (conn.tooltip == null) {
             prepareTooltipString(conn);
           }
@@ -323,21 +295,6 @@ public class RadioLogger extends VisPlugin {
         return super.getToolTipText(e);
       }
     };
-
-    /* Toggle time format */
-    dataTable.getTableHeader().addMouseListener(new MouseAdapter() {
-      public void mouseClicked(MouseEvent e) {
-        int colIndex = dataTable.columnAtPoint(e.getPoint());
-        int columnIndex = dataTable.convertColumnIndexToModel(colIndex);
-        if (columnIndex != COLUMN_TIME) {
-          return;
-        }
-        formatTimeString = !formatTimeString;
-        dataTable.getColumnModel().getColumn(COLUMN_TIME).setHeaderValue(
-            dataTable.getModel().getColumnName(COLUMN_TIME));
-        repaint();
-      }
-    });
 
     dataTable.addKeyListener(new KeyAdapter() {
       public void keyPressed(KeyEvent e) {
@@ -357,21 +314,11 @@ public class RadioLogger extends VisPlugin {
       }
     });
 
-    logFilter = new TableRowSorter<TableModel>(model);
-    for (int i = 0, n = model.getColumnCount(); i < n; i++) {
-      logFilter.setSortable(i, false);
-    }
-    dataTable.setRowSorter(logFilter);
-
     dataTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
         public void valueChanged(ListSelectionEvent e) {
             int row = dataTable.getSelectedRow();
-            if (row < 0) {
-              return;
-            }
-            int modelRowIndex = dataTable.convertRowIndexToModel(row);
-            if (modelRowIndex >= 0) {
-                RadioConnectionLog conn = connections.get(modelRowIndex);
+            if (row >= 0) {
+                RadioConnectionLog conn = connections.get(row);
                 if (conn.tooltip == null) {
                     prepareTooltipString(conn);
                 }
@@ -391,16 +338,6 @@ public class RadioLogger extends VisPlugin {
     editMenu.add(new JMenuItem(clearAction));
 
     payloadMenu.add(new JMenuItem(aliasAction));
-    payloadMenu.add(new JCheckBoxMenuItem(showDuplicatesAction) {
-      public boolean isSelected() {
-        return showDuplicates;
-      }
-    });
-    payloadMenu.add(new JCheckBoxMenuItem(hideNoDestinationAction) {
-      public boolean isSelected() {
-        return hideNoDestinationPackets;
-      }
-    });
 
     fileMenu.add(new JMenuItem(saveAction));
 
@@ -432,14 +369,12 @@ public class RadioLogger extends VisPlugin {
     group.add(rbMenuItem);
     analyzerMenu.add(rbMenuItem);
 
+
     /* Load additional analyzers specified by projects (cooja.config) */
     String[] projectAnalyzerSuites =
       gui.getProjectConfig().getStringArrayValue(RadioLogger.class, "ANALYZERS");
     if (projectAnalyzerSuites != null) {
       for (String suiteName: projectAnalyzerSuites) {
-        if (suiteName == null || suiteName.trim().isEmpty()) {
-          continue;
-        }
         Class<? extends RadioLoggerAnalyzerSuite> suiteClass =
           gui.tryLoadClass(RadioLogger.this, RadioLoggerAnalyzerSuite.class, suiteName);
         try {
@@ -448,7 +383,7 @@ public class RadioLogger extends VisPlugin {
           rbMenuItem = new JRadioButtonMenuItem(createAnalyzerAction(
               suite.getDescription(), suiteName, suiteAnalyzers, false));
           group.add(rbMenuItem);
-          analyzerMenu.add(rbMenuItem);
+          popupMenu.add(rbMenuItem);
           logger.debug("Loaded radio logger analyzers: " + suite.getDescription());
         } catch (InstantiationException e1) {
           logger.warn("Failed to load analyzer suite '" + suiteName + "': " + e1.getMessage());
@@ -522,7 +457,7 @@ public class RadioLogger extends VisPlugin {
             if (isVisible) {
               dataTable.scrollRectToVisible(dataTable.getCellRect(dataTable.getRowCount() - 1, 0, true));
             }
-            setTitle("Radio messages: showing " + dataTable.getRowCount() + "/" + connections.size() + " packets");
+            setTitle("Radio messages: " + dataTable.getRowCount() + " messages seen");
           }
         });
         }
@@ -536,11 +471,6 @@ public class RadioLogger extends VisPlugin {
     }
   }
 
-  public void startPlugin() {
-    super.startPlugin();
-    rebuildAllEntries();
-  }
-  
 	private void searchSelectNext(String text, boolean reverse) {
 		if (text.isEmpty()) {
 			return;
@@ -584,73 +514,16 @@ public class RadioLogger extends VisPlugin {
   public void trySelectTime(final long time) {
     java.awt.EventQueue.invokeLater(new Runnable() {
       public void run() {
-        if (dataTable.getRowCount() == 0) {
-          return;
-        }
-        for (int ai=0; ai < model.getRowCount(); ai++) {
-          int index = dataTable.convertRowIndexToModel(ai);
-          if (connections.get(index).endTime < time) {
+        for (int i=0; i < connections.size(); i++) {
+          if (connections.get(i).endTime < time) {
             continue;
           }
-          
-          dataTable.scrollRectToVisible(dataTable.getCellRect(ai, 0, true));
-          dataTable.setRowSelectionInterval(ai, ai);
+          dataTable.scrollRectToVisible(dataTable.getCellRect(i, 0, true));
+          dataTable.setRowSelectionInterval(i, i);
           return;
         }
-        dataTable.scrollRectToVisible(dataTable.getCellRect(dataTable.getRowCount()-1, 0, true));
-        dataTable.setRowSelectionInterval(dataTable.getRowCount()-1, dataTable.getRowCount()-1);
       }
     });
-  }
-
-  private void applyFilter() {
-    for(RadioConnectionLog conn: connections) {
-      conn.data = null;
-      conn.tooltip = null;
-      conn.hides = 0;
-      conn.hiddenBy = null;
-  }
-
-    try {
-      logFilter.setRowFilter(null);
-      RowFilter<Object, Object> filter = new RowFilter<Object, Object>() {
-        public boolean include(RowFilter.Entry<? extends Object, ? extends Object> entry) {
-          int row = (Integer) entry.getIdentifier();
-          RadioConnectionLog current = connections.get(row);
-          byte[] currentData = current.packet.getPacketData();
-
-          if (!showDuplicates && row > 0) {
-            RadioConnectionLog previous = connections.get(row-1);
-            byte[] previousData = previous.packet.getPacketData();
-            if (!showDuplicates && 
-                Arrays.equals(previousData, currentData) &&
-                previous.connection.getSource() == current.connection.getSource() &&
-                Arrays.equals(previous.connection.getAllDestinations(), current.connection.getAllDestinations())) {
-              if (connections.get(row-1).hiddenBy == null) {
-                connections.get(row-1).hides++;
-                connections.get(row).hiddenBy = connections.get(row-1);
-              } else {
-                connections.get(row-1).hiddenBy.hides++;
-                connections.get(row).hiddenBy = connections.get(row-1).hiddenBy;
-              }
-              return false;
-            }
-          }
-
-          if (hideNoDestinationPackets) {
-            if (current.connection.getDestinations().length == 0) {
-              return false;
-            }
-          }
-
-          return true;
-        }
-      };
-      logFilter.setRowFilter(filter);
-    } catch (PatternSyntaxException e) {
-      logFilter.setRowFilter(null);
-      logger.warn("Error when setting table filter: " + e.getMessage());
-    }
   }
 
   private void prepareDataString(RadioConnectionLog conn) {
@@ -773,19 +646,6 @@ public class RadioLogger extends VisPlugin {
     element.addContent(Integer.toString(splitPane.getDividerLocation()));
     config.add(element);
 
-    if (formatTimeString) {
-      element = new Element("formatted_time");
-      config.add(element);
-    }
-
-    element = new Element("showdups");
-    element.addContent(Boolean.toString(showDuplicates));
-    config.add(element);
-    
-    element = new Element("hidenodests");
-    element.addContent(Boolean.toString(hideNoDestinationPackets));
-    config.add(element);
-
     if (analyzerName != null && analyzers != null) {
       element = new Element("analyzers");
       element.setAttribute("name", analyzerName);
@@ -816,12 +676,6 @@ public class RadioLogger extends VisPlugin {
         aliases.put(payload, alias);
       } else if ("split".equals(name)) {
         splitPane.setDividerLocation(Integer.parseInt(element.getText()));
-      } else if ("formatted_time".equals(name)) {
-        formatTimeString = true;
-      } else if ("showdups".equals(name)) {
-        showDuplicates = Boolean.parseBoolean(element.getText());
-      } else if ("hidenodests".equals(name)) {
-        hideNoDestinationPackets = Boolean.parseBoolean(element.getText());
       } else if ("analyzers".equals(name)) {
         String analyzerName = element.getAttributeValue("name");
         final Action action;
@@ -843,9 +697,6 @@ public class RadioLogger extends VisPlugin {
     long endTime;
     RadioConnection connection;
     RadioPacket packet;
-    
-    RadioConnectionLog hiddenBy = null;
-    int hides = 0;
 
     String data = null;
     String tooltip = null;
@@ -878,18 +729,6 @@ public class RadioLogger extends VisPlugin {
     return sb.toString();
   }
 
-  private void rebuildAllEntries() {
-    applyFilter();
-    
-    if (connections.size() > 0) {
-      model.fireTableRowsUpdated(0, connections.size() - 1);
-    }
-    verboseBox.setText("");
-
-    setTitle("Radio messages: showing " + dataTable.getRowCount() + "/" + connections.size() + " packets");
-    simulation.getGUI().getDesktopPane().repaint();
-  }
-  
   private Action createAnalyzerAction(String name, final String actionName,
           final ArrayList<PacketAnalyzer> analyzerList, boolean selected) {
       Action action = new AbstractAction(name) {
@@ -899,7 +738,16 @@ public class RadioLogger extends VisPlugin {
             if (analyzers != analyzerList) {
                 analyzers = analyzerList;
                 analyzerName = actionName;
-                rebuildAllEntries();
+                if (connections.size() > 0) {
+                    // Remove the cached values
+                    for(int i = 0; i < connections.size(); i++) {
+                        RadioConnectionLog conn = connections.get(i);
+                        conn.data = null;
+                        conn.tooltip = null;
+                    }
+                    model.fireTableRowsUpdated(0, connections.size() - 1);
+                }
+                verboseBox.setText("");
             }
         }
       };
@@ -916,7 +764,7 @@ public class RadioLogger extends VisPlugin {
       if (size > 0) {
         connections.clear();
         model.fireTableRowsDeleted(0, size - 1);
-        setTitle("Radio messages: showing " + dataTable.getRowCount() + "/" + connections.size() + " packets");
+        setTitle("Radio Logger: " + dataTable.getRowCount() + " packets");
       }
     }
   };
@@ -931,8 +779,11 @@ public class RadioLogger extends VisPlugin {
 
       StringBuilder sb = new StringBuilder();
       for (int i: selectedRows) {
-        int iModel = dataTable.convertRowIndexToModel(i);
-        sb.append(connections.get(iModel).toString() + "\n");
+        sb.append(i + 1).append('\t');
+        sb.append(dataTable.getValueAt(i, COLUMN_TIME)).append('\t');
+        sb.append(dataTable.getValueAt(i, COLUMN_FROM)).append('\t');
+        sb.append(getDestString(connections.get(i))).append('\t');
+        sb.append(dataTable.getValueAt(i, COLUMN_DATA)).append('\n');
       }
 
       StringSelection stringSelection = new StringSelection(sb.toString());
@@ -948,7 +799,11 @@ public class RadioLogger extends VisPlugin {
 
       StringBuilder sb = new StringBuilder();
       for(int i=0; i < connections.size(); i++) {
-        sb.append(connections.get(i).toString() + "\n");
+        sb.append("" + (i + 1) + '\t');
+        sb.append("" + dataTable.getValueAt(i, COLUMN_TIME) + '\t');
+        sb.append("" + dataTable.getValueAt(i, COLUMN_FROM) + '\t');
+        sb.append("" + getDestString(connections.get(i)) + '\t');
+        sb.append("" + dataTable.getValueAt(i, COLUMN_DATA) + '\n');
       }
 
       StringSelection stringSelection = new StringSelection(sb.toString());
@@ -989,7 +844,11 @@ public class RadioLogger extends VisPlugin {
       try {
         PrintWriter outStream = new PrintWriter(new FileWriter(saveFile));
         for(int i=0; i < connections.size(); i++) {
-          outStream.print(connections.get(i).toString() + "\n");
+          outStream.print("" + (i + 1) + '\t');
+          outStream.print("" + dataTable.getValueAt(i, COLUMN_TIME) + '\t');
+          outStream.print("" + dataTable.getValueAt(i, COLUMN_FROM) + '\t');
+          outStream.print("" + getDestString(connections.get(i)) + '\t');
+          outStream.print("" + dataTable.getValueAt(i, COLUMN_DATA) + '\n');
         }
         outStream.close();
       } catch (Exception ex) {
@@ -1005,9 +864,6 @@ public class RadioLogger extends VisPlugin {
     public void actionPerformed(ActionEvent e) {
       int selectedRow = dataTable.getSelectedRow();
       if (selectedRow < 0) return;
-      selectedRow = dataTable.convertRowIndexToModel(selectedRow);
-      if (selectedRow < 0) return;
-
       long time = connections.get(selectedRow).startTime;
 
       Plugin[] plugins = simulation.getGUI().getStartedPlugins();
@@ -1028,9 +884,6 @@ public class RadioLogger extends VisPlugin {
     public void actionPerformed(ActionEvent e) {
       int selectedRow = dataTable.getSelectedRow();
       if (selectedRow < 0) return;
-      selectedRow = dataTable.convertRowIndexToModel(selectedRow);
-      if (selectedRow < 0) return;
-
       long time = connections.get(selectedRow).startTime;
 
       Plugin[] plugins = simulation.getGUI().getStartedPlugins();
@@ -1063,8 +916,6 @@ public class RadioLogger extends VisPlugin {
 
     public void actionPerformed(ActionEvent e) {
       int selectedRow = dataTable.getSelectedRow();
-      if (selectedRow < 0) return;
-      selectedRow = dataTable.convertRowIndexToModel(selectedRow);
       if (selectedRow < 0) return;
 
       String current = "";
@@ -1107,22 +958,6 @@ public class RadioLogger extends VisPlugin {
       /* (Re)define alias */
       aliases.put(connections.get(selectedRow).data, alias);
       repaint();
-    }
-  };
-
-  private boolean showDuplicates = false;
-  private AbstractAction showDuplicatesAction = new AbstractAction("Show duplicates") {
-    public void actionPerformed(ActionEvent e) {
-      showDuplicates = !showDuplicates;
-      rebuildAllEntries();
-    }
-  };
-
-  private boolean hideNoDestinationPackets = false;
-  private AbstractAction hideNoDestinationAction = new AbstractAction("Hide airshots") {
-    public void actionPerformed(ActionEvent e) {
-      hideNoDestinationPackets = !hideNoDestinationPackets;
-      rebuildAllEntries();
     }
   };
 

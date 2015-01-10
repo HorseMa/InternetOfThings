@@ -1,8 +1,3 @@
-/**
- * \addtogroup mbxxx-platform
- *
- * @{
- */
 /*
  * Copyright (c) 2010, STMicroelectronics.
  * All rights reserved.
@@ -60,36 +55,32 @@
 
 #include "dev/temperature-sensor.h"
 
-#define SUPPLY_OFFSET 500
+
 /*---------------------------------------------------------------------------*/
 static void
 init(void)
 {
-  //halGpioConfig(TEMPERATURE_SENSOR_GPIO,GPIOCFG_ANALOG);
+  halGpioConfig(TEMPERATURE_SENSOR_GPIO,GPIOCFG_ANALOG);
   halInternalInitAdc();
   halAdcSetRange(TRUE);
-
 }
 /*---------------------------------------------------------------------------*/
 static int
 value(int type)
 {
-  static uint16_t ADCvalue;
-  static int16_t volts;
-  uint16_t scale=1;
+  static int16u ADCvalue;
+  static int16s volts;
   
   halStartAdcConversion(ADC_USER_APP, ADC_REF_INT, ADC_SOURCE(halGetADCChannelFromGPIO(TEMPERATURE_SENSOR_GPIO),ADC_MUX_VREF2), ADC_CONVERSION_TIME_US_4096);
   
   halReadAdcBlocking(ADC_USER_APP, &ADCvalue); // This blocks for a while, about 4ms.
-
-
-  // 100 uVolts
-  volts = boardDescription->temperatureSensor->div*halConvertValueToVolts(ADCvalue) + SUPPLY_OFFSET;
-
   
-  //return ((18641 - (int32_t)volts)*100)/1171;  // +- 0.23 degC in the range (-10;65) degC
-  return ((18663 - (int32_t)volts)*100)/1169;   // +- 0.004 degC in the range (20;30) degC
- 
+  // 100 uVolts
+  volts = halConvertValueToVolts(ADCvalue);
+  
+  //return ((18641 - (int32s)volts)*100)/1171;  // +- 0.23 degC in the range (-10;65) degC
+  return ((18663 - (int32s)volts)*100)/1169;   // +- 0.004 degC in the range (20;30) degC
+  
 }
 /*---------------------------------------------------------------------------*/
 static int
@@ -102,7 +93,7 @@ configure(int type, int value)
     case SENSORS_ACTIVE:
       return 1;
   }
-
+       
   return 0;
 }
 /*---------------------------------------------------------------------------*/
@@ -120,4 +111,3 @@ status(int type)
 /*---------------------------------------------------------------------------*/
 SENSORS_SENSOR(temperature_sensor, TEMPERATURE_SENSOR,
 	       value, configure, status);
-/** @} */

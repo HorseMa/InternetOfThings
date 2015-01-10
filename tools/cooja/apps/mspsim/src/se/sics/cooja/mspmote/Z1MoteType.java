@@ -70,10 +70,7 @@ public class Z1MoteType extends AbstractMspMoteType {
         return new Z1Mote(this, simulation);
     }
 
-    public Class<? extends MoteInterface>[] getDefaultMoteInterfaceClasses() {
-  	  return getAllMoteInterfaceClasses();
-    }
-
+    @Override
     public Class<? extends MoteInterface>[] getAllMoteInterfaceClasses() {
         @SuppressWarnings("unchecked")
         Class<? extends MoteInterface>[] list = createMoteInterfaceList(

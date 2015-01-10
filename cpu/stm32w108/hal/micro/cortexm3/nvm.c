@@ -13,7 +13,7 @@
 
 #ifdef NVM_RAM_EMULATION
 
-static uint16_t calibrationData[32+2]={
+static int16u calibrationData[32+2]={
    0xFFFF, 0xFFFF,
    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
@@ -21,14 +21,14 @@ static uint16_t calibrationData[32+2]={
    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
 };
 
-uint8_t halCommonReadFromNvm(void *data, uint32_t offset, uint16_t length)
+int8u halCommonReadFromNvm(void *data, int32u offset, int16u length)
 {
- halCommonMemCopy(data, ((uint8_t *) calibrationData) + offset, length); 
+ halCommonMemCopy(data, ((int8u *) calibrationData) + offset, length); 
   return ST_SUCCESS;
 }
-uint8_t halCommonWriteToNvm(const void *data, uint32_t offset, uint16_t length)
+int8u halCommonWriteToNvm(const void *data, int32u offset, int16u length)
 {
-  halCommonMemCopy(((uint8_t *) calibrationData) + offset, data, length);
+  halCommonMemCopy(((int8u *) calibrationData) + offset, data, length);
   return ST_SUCCESS;
 }
 
@@ -50,14 +50,14 @@ uint8_t halCommonWriteToNvm(const void *data, uint32_t offset, uint16_t length)
 //are not required to be continuous memory blocks so they can be define
 //separately.  The linker is responsible for placing these storage containers
 //on flash page boundaries.
-NO_STRIPPING __no_init VAR_AT_SEGMENT (const uint8_t nvmStorageLeft[NVM_DATA_SIZE_B], __NVM__);
-NO_STRIPPING __no_init VAR_AT_SEGMENT (const uint8_t nvmStorageRight[NVM_DATA_SIZE_B], __NVM__);
+NO_STRIPPING __no_init VAR_AT_SEGMENT (const int8u nvmStorageLeft[NVM_DATA_SIZE_B], __NVM__);
+NO_STRIPPING __no_init VAR_AT_SEGMENT (const int8u nvmStorageRight[NVM_DATA_SIZE_B], __NVM__);
 
-static uint8_t determineState(void)
+static int8u determineState(void)
 {
-  uint32_t leftMgmt = *(uint32_t *)NVM_LEFT_PAGE;
-  uint32_t rightMgmt = *(uint32_t *)NVM_RIGHT_PAGE;
-  uint8_t state=0;
+  int32u leftMgmt = *(int32u *)NVM_LEFT_PAGE;
+  int32u rightMgmt = *(int32u *)NVM_RIGHT_PAGE;
+  int8u state=0;
   
   if((leftMgmt==0xFFFF0000) && (rightMgmt==0xFFFFFFFF)) {
     //State 1 and state 4 use identical mgmt words.  The function
@@ -95,12 +95,12 @@ static uint8_t determineState(void)
 }
 
 
-uint8_t halCommonReadFromNvm(void *data, uint32_t offset, uint16_t length)
+int8u halCommonReadFromNvm(void *data, int32u offset, int16u length)
 {
-  uint16_t i;
-  uint16_t *flash;
+  int16u i;
+  int16u *flash;
   //Remember: all flash writes are 16bits.
-  uint16_t *ram = (uint16_t*)data;
+  int16u *ram = (int16u*)data;
   
   //The NVM data storage system cannot function if the LEFT and RIGHT
   //storage are not aligned to physical flash pages.
@@ -121,7 +121,7 @@ uint8_t halCommonReadFromNvm(void *data, uint32_t offset, uint16_t length)
     case 4:
     case 9:
     case 10:
-      flash = (uint16_t *)(NVM_LEFT_PAGE+offset);
+      flash = (int16u *)(NVM_LEFT_PAGE+offset);
       for(i=0;i<(length/2);i++) {
         ram[i] = flash[i];
       }
@@ -130,7 +130,7 @@ uint8_t halCommonReadFromNvm(void *data, uint32_t offset, uint16_t length)
     case 6:
     case 7:
     case 8:
-      flash = (uint16_t *)(NVM_RIGHT_PAGE+offset);
+      flash = (int16u *)(NVM_RIGHT_PAGE+offset);
       for(i=0;i<(length/2);i++) {
         ram[i] = flash[i];
       }
@@ -155,9 +155,9 @@ uint8_t halCommonReadFromNvm(void *data, uint32_t offset, uint16_t length)
   return ST_SUCCESS;
 }
 
-uint16_t *halCommonGetAddressFromNvm(uint32_t offset)
+int16u *halCommonGetAddressFromNvm(int32u offset)
 {
-  uint16_t *flash;
+  int16u *flash;
   
   //The NVM data storage system cannot function if the LEFT and RIGHT
   //storage are not aligned to physical flash pages.
@@ -174,22 +174,22 @@ uint16_t *halCommonGetAddressFromNvm(uint32_t offset)
     case 4:
     case 9:
     case 10:
-      flash = (uint16_t *)(NVM_LEFT_PAGE+offset);
+      flash = (int16u *)(NVM_LEFT_PAGE+offset);
     break;
     case 5:
     case 6:
     case 7:
     case 8:
-      flash = (uint16_t *)(NVM_RIGHT_PAGE+offset);
+      flash = (int16u *)(NVM_RIGHT_PAGE+offset);
     break;
     case 0:
     default:
       // Flash is in an invalid state 
       // Fix it with a dummy write and then return the flash page left
       {
-	uint16_t dummy = 0xFFFF;
+	int16u dummy = 0xFFFF;
 	halCommonWriteToNvm(&dummy, 0, 2);
-	flash = (uint16_t *)(NVM_LEFT_PAGE+offset);
+	flash = (int16u *)(NVM_LEFT_PAGE+offset);
       }
   }
   
@@ -197,12 +197,12 @@ uint16_t *halCommonGetAddressFromNvm(uint32_t offset)
 }
 
 
-static uint8_t erasePage(uint32_t page)
+static int8u erasePage(int32u page)
 {
   StStatus status;
-  uint32_t i, k;
-  uint32_t address;
-  uint8_t *flash;
+  int32u i, k;
+  int32u address;
+  int8u *flash;
   
   //Erasing a LEFT or RIGHT page requires erasing all of the flash pages.
   //Since the mgmt bytes are stored at the bottom of a page, the flash pages
@@ -211,7 +211,7 @@ static uint8_t erasePage(uint32_t page)
   //words are still valid the next time determineState() is called.
   for(i=NVM_FLASH_PAGE_COUNT;i>0;i--) {
     address = (page+((i-1)*MFB_PAGE_SIZE_B));
-    flash = (uint8_t *)address;
+    flash = (int8u *)address;
     //Scan the page to determine if it is fully erased already.
     //If the flash is not erased, erase it.  The purpose of scanning
     //first is to save a little time if erasing is not required.
@@ -248,7 +248,7 @@ static uint8_t erasePage(uint32_t page)
   do {                                                                    \
     /*Copy all data below the new data from the srcPage to the destPage*/ \
     status = halInternalFlashWrite(destPage+NVM_MGMT_SIZE_B,              \
-                                   (uint16_t *)(srcPage+NVM_MGMT_SIZE_B),   \
+                                   (int16u *)(srcPage+NVM_MGMT_SIZE_B),   \
                                    (offset-NVM_MGMT_SIZE_B)/2);           \
     if(status != ST_SUCCESS) { return status; }                        \
     /*Write the new data*/                                                \
@@ -258,7 +258,7 @@ static uint8_t erasePage(uint32_t page)
     if(status != ST_SUCCESS) { return status; }                        \
     /*Copy all data above the new data from the srcPage to the destPage*/ \
     status = halInternalFlashWrite(destPage+offset+length,                \
-                                   (uint16_t *)(srcPage+offset+length),     \
+                                   (int16u *)(srcPage+offset+length),     \
                                    (NVM_DATA_SIZE_B-                      \
                                     length-offset-                        \
                                     NVM_MGMT_SIZE_B)/2);                  \
@@ -269,7 +269,7 @@ static uint8_t erasePage(uint32_t page)
 //the proper management address.
 #define WRITE_MGMT_16BITS(address, data)                  \
   do{                                                     \
-    uint16_t value = data;                                  \
+    int16u value = data;                                  \
     status = halInternalFlashWrite((address), &value, 1); \
     if(status != ST_SUCCESS) {                         \
       return status;                                      \
@@ -277,14 +277,14 @@ static uint8_t erasePage(uint32_t page)
   } while(0)
 
 
-uint8_t halCommonWriteToNvm(const void *data, uint32_t offset, uint16_t length)
+int8u halCommonWriteToNvm(const void *data, int32u offset, int16u length)
 {
   StStatus status;
-  uint8_t state, exitState;
-  uint32_t srcPage;
-  uint32_t destPage;
+  int8u state, exitState;
+  int32u srcPage;
+  int32u destPage;
   //Remember: NVM data storage works on 16bit quantities.
-  uint16_t *ram = (uint16_t*)data;
+  int16u *ram = (int16u*)data;
   
   //The NVM data storage system cannot function if the LEFT and RIGHT
   //storage are not aligned to physical flash pages.

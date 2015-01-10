@@ -69,7 +69,7 @@ data_packet_received(struct unicast_conn *uc, const rimeaddr_t *from)
 {
   struct multihop_conn *c = (struct multihop_conn *)uc;
   rimeaddr_t *nexthop;
-  static rimeaddr_t sender, receiver;
+  rimeaddr_t sender, receiver;
 
   /* Copy the packet attributes to avoid them being overwritten or
      cleared by an application program that uses the packet buffer for

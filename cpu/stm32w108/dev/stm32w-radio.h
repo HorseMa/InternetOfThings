@@ -1,9 +1,3 @@
-/**
- * \addtogroup stm32w-cpu
- *
- * @{
- */
-
 /*
  * Copyright (c) 2007, Swedish Institute of Computer Science.
  * All rights reserved.
@@ -32,6 +26,8 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
+ * This file is part of the Contiki operating system.
+ *
  */
 
 /**
@@ -49,15 +45,14 @@
 #include "hal/hal.h"
 #include "simplemac/include/phy-library.h"
 
+int stm32w_radio_set_channel(uint8_t channel);
+short last_packet_rssi();
+
 #define STM32W_MAX_PACKET_LEN      127
 
 extern const struct radio_driver stm32w_radio_driver;
 
-int stm32w_radio_set_channel(uint8_t channel);
-
-short last_packet_rssi();
-
 int stm32w_radio_is_on(void);
 
+
 #endif /* __STM32W_H__ */
-/** @} */

@@ -65,7 +65,7 @@ boolean halFlashEraseIsActive(void);
  *  - ST_ERR_FLASH_VERIFY_FAILED if erase verification failed
  *  - ST_SUCCESS if erasure completed and verified properly
  */
-StStatus halInternalFlashErase(uint8_t eraseType, uint32_t address);
+StStatus halInternalFlashErase(int8u eraseType, int32u address);
 
 /** @brief Writes a block of words to flash.  A page is erased
  * to 0xFFFF at every address.  Only two writes can be performed to the same
@@ -96,7 +96,7 @@ StStatus halInternalFlashErase(uint8_t eraseType, uint32_t address);
  *  - ST_ERR_FLASH_VERIFY_FAILED if write verification failed
  *  - ST_SUCCESS if writing completed and verified properly
  */
-StStatus halInternalFlashWrite(uint32_t address, uint16_t * data, uint32_t length);
+StStatus halInternalFlashWrite(int32u address, int16u * data, int32u length);
 
 /** @brief Writes an option byte to the customer information block.  Only
  * two writes can be performed to the same address between erasures and this
@@ -116,7 +116,7 @@ StStatus halInternalFlashWrite(uint32_t address, uint16_t * data, uint32_t lengt
  *  - ST_ERR_FLASH_VERIFY_FAILED if write verification failed
  *  - ST_SUCCESS if writing completed and verified properly
  */
-StStatus halInternalCibOptionByteWrite(uint8_t byte, uint8_t data);
+StStatus halInternalCibOptionByteWrite(int8u byte, int8u data);
 
 #endif //DOXYGEN_SHOULD_SKIP_THIS
 

@@ -32,14 +32,14 @@ static boolean sleepTimerInterruptOccurred = FALSE;
  * a single clock tick occurs every 0.9769625 milliseconds, and a rollover
  * of the 16-bit timer occurs every 64 seconds.
  */
-uint16_t halCommonGetInt16uMillisecondTick(void)
+int16u halCommonGetInt16uMillisecondTick(void)
 {
-  return (uint16_t)halCommonGetInt32uMillisecondTick();
+  return (int16u)halCommonGetInt32uMillisecondTick();
 }
 
-uint16_t halCommonGetInt16uQuarterSecondTick(void)
+int16u halCommonGetInt16uQuarterSecondTick(void)
 {
-  return (uint16_t)(halCommonGetInt32uMillisecondTick() >> 8);
+  return (int16u)(halCommonGetInt32uMillisecondTick() >> 8);
 }
 
 /**
@@ -47,9 +47,9 @@ uint16_t halCommonGetInt16uQuarterSecondTick(void)
  * a single clock tick occurs every 0.9769625 milliseconds, and a rollover
  * of the 32-bit timer occurs approximately every 48.5 days.
  */
-uint32_t halCommonGetInt32uMillisecondTick(void)
+int32u halCommonGetInt32uMillisecondTick(void)
 {
-  uint32_t time;
+  int32u time;
   
   time = SLEEPTMR_CNTH<<16;
   time |= SLEEPTMR_CNTL;
@@ -71,13 +71,13 @@ void halSleepTimerIsr(void)
 #define CONVERT_TICKS_TO_QS(x) ((x) >> 8)
 #define TIMER_MAX_QS           0x1000000 // = 4194304 seconds * 4 = 16777216
 static StStatus internalSleepForQs(boolean useGpioWakeMask,
-                                      uint32_t *duration,
-                                      uint32_t gpioWakeBitMask)
+                                      int32u *duration,
+                                      int32u gpioWakeBitMask)
 {
   StStatus status = ST_SUCCESS;
-  uint32_t sleepOverflowCount;
-  uint32_t remainder;
-  uint32_t startCount;
+  int32u sleepOverflowCount;
+  int32u remainder;
+  int32u startCount;
   
   //There is really no reason to bother with a duration of 0qs
   if(*duration==0) {
@@ -165,7 +165,7 @@ static StStatus internalSleepForQs(boolean useGpioWakeMask,
   return status;
 }
 
-StStatus halSleepForQsWithOptions(uint32_t *duration, uint32_t gpioWakeBitMask)
+StStatus halSleepForQsWithOptions(int32u *duration, int32u gpioWakeBitMask)
 {
   return internalSleepForQs(TRUE, duration, gpioWakeBitMask);
 }

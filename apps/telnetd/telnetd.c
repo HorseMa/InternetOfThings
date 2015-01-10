@@ -72,8 +72,8 @@ struct telnetd_state {
 #define STATE_WONT   3
 #define STATE_DO     4
 #define STATE_DONT   5
+  
 #define STATE_CLOSE  6
-  struct timer silence_timer;
 };
 static struct telnetd_state s;
 
@@ -100,8 +100,6 @@ struct telnetd_buf {
 static struct telnetd_buf buf;
 
 static uint8_t connected;
-
-#define MAX_SILENCE_TIME (CLOCK_SECOND * 30)
 
 #define MIN(a, b) ((a) < (b)? (a): (b))
 /*---------------------------------------------------------------------------*/
@@ -359,7 +357,6 @@ telnetd_appcall(void *ts)
       s.state = STATE_NORMAL;
       connected = 1;
       shell_start();
-      timer_set(&s.silence_timer, MAX_SILENCE_TIME);
       ts = (char *)0;
     } else {
       uip_send(telnetd_reject_text, strlen(telnetd_reject_text));
@@ -381,11 +378,9 @@ telnetd_appcall(void *ts)
       connected = 0;
     }
     if(uip_acked()) {
-      timer_set(&s.silence_timer, MAX_SILENCE_TIME);
       acked();
     }
     if(uip_newdata()) {
-      timer_set(&s.silence_timer, MAX_SILENCE_TIME);
       newdata();
     }
     if(uip_rexmit() ||
@@ -394,22 +389,15 @@ telnetd_appcall(void *ts)
        uip_connected() ||
        uip_poll()) {
       senddata();
-      if(s.numsent > 0) {
-	timer_set(&s.silence_timer, MAX_SILENCE_TIME);
-      }
     }
+  } else {
     if(uip_poll()) {
-      if(timer_expired(&s.silence_timer)) {
+      if(ts == (char *)10) {
         uip_close();
-        tcp_markconn(uip_conn, NULL);
+      } else {
+        tcp_markconn(uip_conn, (char *)ts + 1);
       }
     }
   }
-}
-/*---------------------------------------------------------------------------*/
-void
-telnetd_init(void)
-{
-  process_start(&telnetd_process, NULL);
 }
 /*---------------------------------------------------------------------------*/

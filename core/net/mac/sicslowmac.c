@@ -84,8 +84,7 @@ static uint16_t mac_src_pan_id = IEEE802154_PANID;
 static int
 is_broadcast_addr(uint8_t mode, uint8_t *addr)
 {
-  static int i;
-  i = mode == FRAME802154_SHORTADDRMODE ? 2 : 8;
+  int i = mode == FRAME802154_SHORTADDRMODE ? 2 : 8;
   while(i-- > 0) {
     if(addr[i] != 0xff) {
       return 0;
@@ -97,9 +96,8 @@ is_broadcast_addr(uint8_t mode, uint8_t *addr)
 static void
 send_packet(mac_callback_t sent, void *ptr)
 {
-  static frame802154_t params;
-  static uint8_t len;
-  len = 0;
+  frame802154_t params;
+  uint8_t len;
 
   /* init to zeros */
   memset(&params, 0, sizeof(params));
@@ -148,21 +146,17 @@ send_packet(mac_callback_t sent, void *ptr)
    * Set up the source address using only the long address mode for
    * phase 1.
    */
-#if NETSTACK_CONF_BRIDGE_MODE
-  rimeaddr_copy((rimeaddr_t *)&params.src_addr,packetbuf_addr(PACKETBUF_ADDR_SENDER));
-#else
   rimeaddr_copy((rimeaddr_t *)&params.src_addr, &rimeaddr_node_addr);
-#endif
 
   params.payload = packetbuf_dataptr();
   params.payload_len = packetbuf_datalen();
   len = frame802154_hdrlen(&params);
   if(packetbuf_hdralloc(len)) {
-    static int ret;
+    int ret;
     frame802154_create(&params, packetbuf_hdrptr(), len);
 
     PRINTF("6MAC-UT: %2X", params.fcf.frame_type);
-    PRINTADDR(params.dest_addr);
+    PRINTADDR(params.dest_addr.u8);
     PRINTF("%u %u (%u)\n", len, packetbuf_datalen(), packetbuf_totlen());
 
     ret = NETSTACK_RADIO.send(packetbuf_hdrptr(), packetbuf_totlen());
@@ -193,9 +187,8 @@ send_list(mac_callback_t sent, void *ptr, struct rdc_buf_list *buf_list)
 static void
 input_packet(void)
 {
-  static frame802154_t frame;
-  static int len;
-  memset(&frame,0,sizeof(frame802154_t));
+  frame802154_t frame;
+  int len;
 
   len = packetbuf_datalen();
 
@@ -210,14 +203,12 @@ input_packet(void)
       }
       if(!is_broadcast_addr(frame.fcf.dest_addr_mode, frame.dest_addr)) {
         packetbuf_set_addr(PACKETBUF_ADDR_RECEIVER, (rimeaddr_t *)&frame.dest_addr);
-#if !NETSTACK_CONF_BRIDGE_MODE
         if(!rimeaddr_cmp(packetbuf_addr(PACKETBUF_ADDR_RECEIVER),
                          &rimeaddr_node_addr)) {
           /* Not for this node */
           PRINTF("6MAC: not for us\n");
           return;
         }
-#endif
       }
     }
     packetbuf_set_addr(PACKETBUF_ADDR_SENDER, (rimeaddr_t *)&frame.src_addr);

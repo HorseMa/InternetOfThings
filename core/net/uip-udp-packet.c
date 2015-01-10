@@ -54,8 +54,7 @@ uip_udp_packet_send(struct uip_udp_conn *c, const void *data, int len)
     uip_udp_conn = c;
     uip_slen = len;
     memcpy(&uip_buf[UIP_LLH_LEN + UIP_IPUDPH_LEN], data,
-           len > UIP_BUFSIZE - UIP_LLH_LEN - UIP_IPUDPH_LEN?
-           UIP_BUFSIZE - UIP_LLH_LEN - UIP_IPUDPH_LEN: len);
+           len > UIP_BUFSIZE? UIP_BUFSIZE: len);
     uip_process(UIP_UDP_SEND_CONN);
 #if UIP_CONF_IPV6
     tcpip_ipv6_output();
@@ -73,10 +72,9 @@ void
 uip_udp_packet_sendto(struct uip_udp_conn *c, const void *data, int len,
 		      const uip_ipaddr_t *toaddr, uint16_t toport)
 {
-  static uip_ipaddr_t curaddr;
-  static uint16_t curport;
-  memset(&curaddr,0,sizeof(uip_ipaddr_t));
-  curport = 0;
+  uip_ipaddr_t curaddr;
+  uint16_t curport;
+
   if(toaddr != NULL) {
     /* Save current IP addr/port. */
     uip_ipaddr_copy(&curaddr, &c->ripaddr);

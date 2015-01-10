@@ -28,18 +28,18 @@ int putchar (int c)
 #endif
 #define RECEIVE_QUEUE_SIZE (128)
 
-uint8_t rxQ[RECEIVE_QUEUE_SIZE];
-uint16_t rxHead;
-uint16_t rxTail;
-uint16_t rxUsed;
+int8u rxQ[RECEIVE_QUEUE_SIZE];
+int16u rxHead;
+int16u rxTail;
+int16u rxUsed;
 
 //////////////////////////////////////////////////////////////////////////////
 // Initialization
 
-void uartInit(uint32_t baudrate, uint8_t databits, SerialParity parity, uint8_t stopbits)
+void uartInit(int32u baudrate, int8u databits, SerialParity parity, int8u stopbits)
 {
-  uint32_t tempcfg;
-  uint32_t tmp;
+  int32u tempcfg;
+  int32u tmp;
   
   assert( (baudrate >= 300) && (baudrate <=921600) );
     
@@ -171,10 +171,10 @@ static void halInternalUart1RxIsr(void)
   // data, processing any errors noted
   // along the way.
   while ( SC1_UARTSTAT & SC_UARTRXVAL ) {
-    uint8_t errors = SC1_UARTSTAT & (SC_UARTFRMERR |
+    int8u errors = SC1_UARTSTAT & (SC_UARTFRMERR |
                                    SC_UARTRXOVF  |
                                    SC_UARTPARERR );
-    uint8_t incoming = (uint8_t) SC1_DATA;
+    int8u incoming = (int8u) SC1_DATA;
 
     if ( (errors == 0) && (rxUsed < (RECEIVE_QUEUE_SIZE-1)) ) {
       rxQ[rxHead] = incoming;
@@ -194,7 +194,7 @@ static void halInternalUart1RxIsr(void)
 
 void halSc1Isr(void)
 {
-  uint32_t interrupt;
+  int32u interrupt;
 
   //this read and mask is performed in two steps otherwise the compiler
   //will complain about undefined order of volatile access
@@ -233,7 +233,7 @@ void halSc1Isr(void)
 * Output         : dataByte: buffer containing the read byte if any
 * Return         : TRUE if there is a data, FALSE otherwise
 *******************************************************************************/
-boolean __io_getcharNonBlocking(uint8_t *data)
+boolean __io_getcharNonBlocking(int8u *data)
 {
   if (__read(_LLIO_STDIN,data,1))
     return TRUE;

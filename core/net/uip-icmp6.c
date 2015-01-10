@@ -45,7 +45,6 @@
 #include <string.h>
 #include "net/uip-ds6.h"
 #include "net/uip-icmp6.h"
-#include "contiki-default-conf.h"
 
 #define DEBUG 0
 #if DEBUG
@@ -71,7 +70,6 @@ static uip_ipaddr_t tmp_ipaddr;
 #include "rpl/rpl.h"
 #endif /* UIP_CONF_IPV6_RPL */
 
-#if UIP_CONF_IPV6
 /*---------------------------------------------------------------------------*/
 void
 uip_icmp6_echo_request_input(void)
@@ -248,7 +246,7 @@ uip_icmp6_error_output(uint8_t type, uint8_t code, uint32_t param) {
 
 /*---------------------------------------------------------------------------*/
 void
-uip_icmp6_send(uip_ipaddr_t *dest, int type, int code, int payload_len)
+uip_icmp6_send(uip_ipaddr_t *dest, uint8_t type, uint8_t code, uint8_t payload_len)
 {
 
   UIP_IP_BUF->vtc = 0x60;
@@ -274,4 +272,3 @@ uip_icmp6_send(uip_ipaddr_t *dest, int type, int code, int payload_len)
 /*---------------------------------------------------------------------------*/
 
 /** @} */
-#endif /* UIP_CONF_IPV6 */

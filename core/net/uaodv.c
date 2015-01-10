@@ -247,10 +247,9 @@ static void
 handle_incoming_rreq(void)
 {
   struct uaodv_msg_rreq *rm = (struct uaodv_msg_rreq *)uip_appdata;
-  static uip_ipaddr_t dest_addr, orig_addr;
+  uip_ipaddr_t dest_addr, orig_addr;
   struct uaodv_rt_entry *rt, *fw = NULL;
-  memset(&dest_addr,0,sizeof(uip_ipaddr_t));
-  memset(&orig_addr,0,sizeof(uip_ipaddr_t));
+  
   print_debug("RREQ %d.%d.%d.%d -> %d.%d.%d.%d ttl=%u"
 	      " orig=%d.%d.%d.%d seq=%lu hops=%u dest=%d.%d.%d.%d seq=%lu\n",
 	      uip_ipaddr_to_quad(&BUF->srcipaddr),

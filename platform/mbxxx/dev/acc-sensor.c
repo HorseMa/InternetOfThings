@@ -1,8 +1,3 @@
-/**
- * \addtogroup mbxxx-platform
- *
- * @{
- */
 /*
  * Copyright (c) 2010, STMicroelectronics.
  * All rights reserved.
@@ -56,7 +51,7 @@
 static int
 active(void)
 {
-  uint8_t reg;
+  int8u reg;
   if(!i2c_read_reg (kLIS3L02DQ_SLAVE_ADDR,CTRL_REG1, &reg, 1))
     return FALSE;
   
@@ -67,8 +62,8 @@ static int
 value(int type)
 {
   
-  int8_t i2c_data = 0;
-  uint8_t reg_addr;
+  int8s i2c_data = 0;
+  int8u reg_addr;
   
   switch(type) {
     case ACC_X_AXIS:
@@ -87,13 +82,13 @@ value(int type)
       return 0;    
   }
   
-  i2c_read_reg(kLIS3L02DQ_SLAVE_ADDR, reg_addr, (uint8_t *)&i2c_data, 1);
+  i2c_read_reg(kLIS3L02DQ_SLAVE_ADDR, reg_addr, (int8u *)&i2c_data, 1);
   
   if(MEMS_GetFullScale()==ACC_HIGH_RANGE){
-    return ((int16_t)i2c_data)*HIGH_RANGE_SENSITIVITY;
+    return ((int16s)i2c_data)*HIGH_RANGE_SENSITIVITY;
   }
   else {
-    return ((int16_t)i2c_data)*LOW_RANGE_SENSITIVITY;
+    return ((int16s)i2c_data)*LOW_RANGE_SENSITIVITY;
   }
 
 }
@@ -122,7 +117,7 @@ configure(int type, int value)
       
     case ACC_HPF:      
       if(value < ACC_HPF_DISABLE){
-        return i2c_write_reg(kLIS3L02DQ_SLAVE_ADDR, CTRL_REG2, (1<<4) | (uint8_t)value);
+        return i2c_write_reg(kLIS3L02DQ_SLAVE_ADDR, CTRL_REG2, (1<<4) | (int8u)value);
       }
       else {
         return i2c_write_reg(kLIS3L02DQ_SLAVE_ADDR, CTRL_REG2, 0x00);
@@ -149,4 +144,3 @@ SENSORS_SENSOR(acc_sensor, ACC_SENSOR,
 
 
 
-/** @} */

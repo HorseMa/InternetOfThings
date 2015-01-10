@@ -266,8 +266,7 @@ PROCESS_THREAD(slip_process, ev, data)
 				UIP_BUFSIZE - UIP_LLH_LEN);
 #if !UIP_CONF_IPV6
     if(uip_len == 4 && strncmp((char*)&uip_buf[UIP_LLH_LEN], "?IPA", 4) == 0) {
-      static char buf[8];
-      memset(buf,0,8);
+      char buf[8];
       memcpy(&buf[0], "=IPA", 4);
       memcpy(&buf[4], &uip_hostaddr, 4);
       if(input_callback) {
@@ -370,8 +369,7 @@ slip_input_byte(unsigned char c)
 
   /* add_char: */
   {
-    static unsigned next;
-    next = 0;
+    unsigned next;
     next = end + 1;
     if(next == RX_BUFSIZE) {
       next = 0;

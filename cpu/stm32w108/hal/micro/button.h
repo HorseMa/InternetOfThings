@@ -13,7 +13,7 @@
 #define BUTTON_UNKNOWN   3
 
 
-typedef uint8_t HalBoardButton;
+typedef int8u HalBoardButton;
 
 /* Functions -----------------------------------------------------------------*/
 
@@ -21,7 +21,7 @@ typedef uint8_t HalBoardButton;
 void halInitButton(void);
 
 /** @brief Get button status */
-uint8_t halGetButtonStatus(HalBoardButton button);
+int8u halGetButtonStatus(HalBoardButton button);
 
 #endif /* _BUTTON_H_ */
 

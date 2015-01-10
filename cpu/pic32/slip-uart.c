@@ -60,7 +60,7 @@
 #define PRINTF(...)
 #endif
 
-#define SLIP_UART(XX, YY)                            \
+#define SLIP_UART(XX)                                \
   void                                               \
   slip_arch_writeb(unsigned char c)                  \
   {                                                  \
@@ -75,20 +75,20 @@
     PRINTF("Initializing slip uart: %lubps\n", ubr); \
   }                                                  \
                                                      \
-  UART_INTERRUPT(XX, YY, slip_input_byte);
+  UART_INTERRUPT(XX, 0, slip_input_byte);
 
 #ifdef __USE_UART_PORT1A_FOR_SLIP__
-SLIP_UART(1A, 0);
+SLIP_UART(1A);
 #elif defined  __USE_UART_PORT1B_FOR_SLIP__
-SLIP_UART(1B, 2);
+SLIP_UART(1B);
 #elif defined  __USE_UART_PORT2A_FOR_SLIP__
-SLIP_UART(2A, 1);
+SLIP_UART(2A);
 #elif defined  __USE_UART_PORT2B_FOR_SLIP__
-SLIP_UART(2B, 2);
+SLIP_UART(2B);
 #elif defined  __USE_UART_PORT3A_FOR_SLIP__
-SLIP_UART(3A, 1);
+SLIP_UART(3A);
 #elif defined  __USE_UART_PORT3B_FOR_SLIP__
-SLIP_UART(3B, 2);
+SLIP_UART(3B);
 #else
 SLIP_UART(1A);
 #endif

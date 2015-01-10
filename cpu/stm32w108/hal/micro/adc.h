@@ -37,7 +37,7 @@
 #ifdef CORTEXM3_STM32W108
 
 // A type for the ADC User enumeration.
-typedef uint8_t ADCUser;
+typedef int8u ADCUser;
 enum
 {
   /** LQI User ID. */
@@ -55,7 +55,7 @@ enum
 
 
 // A type for the reference enumeration.
-typedef uint8_t ADCReferenceType;
+typedef int8u ADCReferenceType;
 enum
 {
   /** AREF pin reference. */
@@ -67,7 +67,7 @@ enum
 };
 
 // A type for the rate enumeration.
-typedef uint8_t ADCRateType;
+typedef int8u ADCRateType;
 enum
 {
   /** Rate 32 us, 5 effective bits in ADC_DATA[15:11] */
@@ -173,7 +173,7 @@ enum
 /** @brief A type for the channel enumeration 
  * (such as ::ADC_SOURCE_ADC0_GND)
  */
-typedef uint8_t ADCChannelType;
+typedef int8u ADCChannelType;
 
 /** @brief Returns the ADC channel from a given GPIO. Its value can can be used
  * inside the ADC_SOURCE(P,N) macro to retrieve the input pair for
@@ -184,7 +184,7 @@ typedef uint8_t ADCChannelType;
  * 
  * @return The ADC_MUX value connected to the given GPIO.
  */
-uint8_t halGetADCChannelFromGPIO(uint32_t io);
+int8u halGetADCChannelFromGPIO(int32u io);
 
 
 /** @brief Initializes and powers-up the ADC. 
@@ -226,7 +226,7 @@ StStatus halStartAdcConversion(ADCUser id,
  *
  * @param id     An ADC user.
  *
- * @param value  Pointer to an uint16_t to be loaded with the new value. 
+ * @param value  Pointer to an int16u to be loaded with the new value. 
  * 
  * @return One of the following: 
  * - ::ST_ADC_CONVERSION_DONE       if the conversion is complete.
@@ -237,7 +237,7 @@ StStatus halStartAdcConversion(ADCUser id,
  * - ::ST_ADC_NO_CONVERSION_PENDING if \c id does not have a pending 
  * conversion.
  */
-StStatus halRequestAdcData(ADCUser id, uint16_t *value);
+StStatus halRequestAdcData(ADCUser id, int16u *value);
 
 
 /** @brief Waits for the user's request to complete and then,
@@ -248,14 +248,14 @@ StStatus halRequestAdcData(ADCUser id, uint16_t *value);
  *
  * @param id     An ADC user.
  *
- * @param value  Pointer to an uint16_t to be loaded with the new value. 
+ * @param value  Pointer to an int16u to be loaded with the new value. 
  * 
  * @return One of the following: 
  * - ::ST_ADC_CONVERSION_DONE        if the conversion is complete.
  * - ::ST_ADC_NO_CONVERSION_PENDING  if \c id does not have a pending 
  * conversion.
  */
-StStatus halReadAdcBlocking(ADCUser id, uint16_t *value);
+StStatus halReadAdcBlocking(ADCUser id, int16u *value);
 
 
 /** @brief Calibrates or recalibrates the ADC system. 
@@ -284,11 +284,11 @@ StStatus halAdcCalibrate(ADCUser id);
  *
  * @appusage Use this function to get a human useful value.
  *
- * @param value  An uint16_t to be converted.
+ * @param value  An int16u to be converted.
  * 
  * @return Volts as signed fixed point with units 10^-4 Volts. 
  */
-int16_t halConvertValueToVolts(uint16_t value);
+int16s halConvertValueToVolts(int16u value);
 
 
 /** @brief Calibrates Vref to be 1.2V +/-10mV.

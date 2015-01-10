@@ -15,7 +15,7 @@
  */
 #ifndef __STSTATUS_TYPE__
 #define __STSTATUS_TYPE__
-  typedef uint8_t StStatus;
+  typedef int8u StStatus;
 #endif //__STSTATUS_TYPE__
 
 /**

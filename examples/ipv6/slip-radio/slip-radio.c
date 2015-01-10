@@ -169,7 +169,6 @@ init(void)
   packet_pos = 0;
 }
 /*---------------------------------------------------------------------------*/
-#if !SLIP_RADIO_CONF_NO_PUTCHAR
 #undef putchar
 int
 putchar(int c)
@@ -197,7 +196,6 @@ putchar(int c)
   }
   return c;
 }
-#endif
 /*---------------------------------------------------------------------------*/
 PROCESS(slip_radio_process, "Slip radio process");
 AUTOSTART_PROCESSES(&slip_radio_process);

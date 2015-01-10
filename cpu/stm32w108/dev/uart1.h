@@ -1,9 +1,3 @@
-/**
- * \addtogroup stm32w-cpu
- *
- * @{
- */
-
 /*
  * Copyright (c) 2007, Swedish Institute of Computer Science.
  * All rights reserved.
@@ -32,6 +26,8 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
+ * This file is part of the Contiki operating system.
+ *
  */
 
 /**
@@ -46,13 +42,9 @@
 
 #define BAUD2UBR(baud) baud
 
-void uart1_set_input(int (*input) (unsigned char c));
-
+void uart1_set_input(int (*input)(unsigned char c));
 void uart1_writeb(unsigned char c);
-
 void uart1_init(unsigned long ubr);
-
- /* uint8_t uart1_active(void); */
+//uint8_t uart1_active(void);
 
 #endif /* __UART1_H__ */
-/** @} */

@@ -70,8 +70,6 @@ public class ContikiRS232 extends SerialUI implements ContikiMoteInterface, Poll
   private ContikiMote mote = null;
   private SectionMoteMemory moteMem = null;
 
-  static final int SERIAL_BUF_SIZE = 1024; /* rs232.c:40 */
-  
   /**
    * Creates an interface to the RS232 at mote.
    *
@@ -111,11 +109,6 @@ public class ContikiRS232 extends SerialUI implements ContikiMoteInterface, Poll
         /* Append to existing buffer */
         int oldSize = moteMem.getIntValueOf("simSerialReceivingLength");
         int newSize = oldSize + dataToAppend.length;
-        if (newSize > SERIAL_BUF_SIZE) {
-        	logger.fatal("ContikiRS232: dropping rs232 data #1, buffer full: " + oldSize + " -> " + newSize);
-        	mote.requestImmediateWakeup();
-        	return;
-        }
         moteMem.setIntValueOf("simSerialReceivingLength", newSize);
 
         byte[] oldData = moteMem.getByteArray("simSerialReceivingData", oldSize);
@@ -166,11 +159,6 @@ public class ContikiRS232 extends SerialUI implements ContikiMoteInterface, Poll
         /* Append to existing buffer */
         int oldSize = moteMem.getIntValueOf("simSerialReceivingLength");
         int newSize = oldSize + dataToAppend.length;
-        if (newSize > SERIAL_BUF_SIZE) {
-        	logger.fatal("ContikiRS232: dropping rs232 data #2, buffer full: " + oldSize + " -> " + newSize);
-        	mote.requestImmediateWakeup();
-        	return;
-        }
         moteMem.setIntValueOf("simSerialReceivingLength", newSize);
 
         byte[] oldData = moteMem.getByteArray("simSerialReceivingData", oldSize);
@@ -224,11 +212,6 @@ public class ContikiRS232 extends SerialUI implements ContikiMoteInterface, Poll
         /* Append to existing buffer */
         int oldSize = moteMem.getIntValueOf("simSerialReceivingLength");
         int newSize = oldSize + dataToAppend.length;
-        if (newSize > SERIAL_BUF_SIZE) {
-        	logger.fatal("ContikiRS232: dropping rs232 data #3, buffer full: " + oldSize + " -> " + newSize);
-        	mote.requestImmediateWakeup();
-        	return;
-        }
         moteMem.setIntValueOf("simSerialReceivingLength", newSize);
 
         byte[] oldData = moteMem.getByteArray("simSerialReceivingData", oldSize);
@@ -246,26 +229,13 @@ public class ContikiRS232 extends SerialUI implements ContikiMoteInterface, Poll
         mote.requestImmediateWakeup();
       }
     };
-
-    /* Simulation thread: schedule immediately */
-    if (mote.getSimulation().isSimulationThread()) {
-    	mote.getSimulation().scheduleEvent(
-    			pendingBytesEvent,
-    			mote.getSimulation().getSimulationTime()
-    			);
-    	return;
-    }
-
     mote.getSimulation().invokeSimulationThread(new Runnable() {
-    	public void run() {
-    		if (pendingBytesEvent.isScheduled()) {
-    			return;
-    		}
-    		mote.getSimulation().scheduleEvent(
-    				pendingBytesEvent,
-    				mote.getSimulation().getSimulationTime()
-    				);
-    	}
+      public void run() {
+        mote.getSimulation().scheduleEvent(
+            pendingBytesEvent,
+            mote.getSimulation().getSimulationTime()
+        );
+      }
     });
   }
 

@@ -52,7 +52,6 @@
 #include "contiki.h"
 #include "ctk/ctk.h"
 #include "ctk/ctk-draw.h"
-#include "sys/log.h"
 
 #include "program-handler.h"
 

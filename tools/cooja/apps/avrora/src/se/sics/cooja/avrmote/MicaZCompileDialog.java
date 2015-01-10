@@ -64,9 +64,6 @@ public class MicaZCompileDialog extends AbstractCompileDialog {
     super(parent, simulation, moteType);
   }
 
-  public Class<? extends MoteInterface>[] getAllMoteInterfaces() {
-	  return ((MicaZMoteType)moteType).getAllMoteInterfaceClasses();
-  }
   public Class<? extends MoteInterface>[] getDefaultMoteInterfaces() {
     return ((MicaZMoteType)moteType).getAllMoteInterfaceClasses();
   }

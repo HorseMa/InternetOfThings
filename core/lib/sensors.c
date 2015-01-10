@@ -53,8 +53,7 @@ PROCESS(sensors_process, "Sensors");
 static int
 get_sensor_index(const struct sensors_sensor *s)
 {
-  static int i;
-  i = 0;
+  int i;
   for(i = 0; i < num_sensors; ++i) {
     if(sensors[i] == s) {
       return i;

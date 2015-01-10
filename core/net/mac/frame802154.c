@@ -77,6 +77,8 @@ typedef struct {
   uint8_t aux_sec_len;     /**<  Length (in bytes) of aux security header field */
 } field_length_t;
 
+static field_length_t flen;
+static frame802154_fcf_t fcf;
 /*----------------------------------------------------------------------------*/
 CC_INLINE static uint8_t
 addr_len(uint8_t mode)
@@ -153,10 +155,9 @@ field_len(frame802154_t *p, field_length_t *flen)
  *
  *   \return The length of the frame header.
 */
-int
+uint8_t
 frame802154_hdrlen(frame802154_t *p)
 {
-  field_length_t flen;
   field_len(p, &flen);
   return 3 + flen.dest_pid_len + flen.dest_addr_len +
     flen.src_pid_len + flen.src_addr_len + flen.aux_sec_len;
@@ -176,11 +177,10 @@ frame802154_hdrlen(frame802154_t *p)
  *   \return The length of the frame header or 0 if there was
  *   insufficient space in the buffer for the frame headers.
 */
-int
-frame802154_create(frame802154_t *p, uint8_t *buf, int buf_len)
+uint8_t
+frame802154_create(frame802154_t *p, uint8_t *buf, uint8_t buf_len)
 {
   int c;
-  field_length_t flen;
   uint8_t *tx_frame_buffer;
   uint8_t pos;
 
@@ -236,7 +236,7 @@ frame802154_create(frame802154_t *p, uint8_t *buf, int buf_len)
 /*     pos += flen.aux_sec_len; */
   }
 
-  return (int)pos;
+  return pos;
 }
 /*----------------------------------------------------------------------------*/
 /**
@@ -248,20 +248,19 @@ frame802154_create(frame802154_t *p, uint8_t *buf, int buf_len)
  *   \param len The size of the input data
  *   \param pf The frame802154_t struct to store the parsed frame information.
  */
-int
-frame802154_parse(uint8_t *data, int len, frame802154_t *pf)
+uint8_t
+frame802154_parse(uint8_t *data, uint8_t len, frame802154_t *pf)
 {
   uint8_t *p;
-  static frame802154_fcf_t fcf;
-  int c;
+  uint8_t c;
 
-  memset(&fcf,0,sizeof(frame802154_fcf_t));
   if(len < 3) {
     return 0;
   }
 
   p = data;
 
+  memset(&fcf, 0, sizeof(fcf));
   /* decode the FCF */
   fcf.frame_type = p[0] & 7;
   fcf.security_enabled = (p[0] >> 3) & 1;
@@ -346,7 +345,7 @@ frame802154_parse(uint8_t *data, int len, frame802154_t *pf)
   /* header length */
   c = p - data;
   /* payload length */
-  pf->payload_len = (uint8_t)(0xff & (len - c));
+  pf->payload_len = len - c;
   /* payload */
   pf->payload = p;
 

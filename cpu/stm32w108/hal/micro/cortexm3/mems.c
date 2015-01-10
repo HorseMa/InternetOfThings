@@ -19,19 +19,19 @@
 #define WAIT_TX_FIN()   do{}while((SC2_TWISTAT&SC_TWITXFIN)!=SC_TWITXFIN)
 #define WAIT_RX_FIN()   do{}while((SC2_TWISTAT&SC_TWIRXFIN)!=SC_TWIRXFIN)
 
-static uint8_t i2c_MEMS_Init (void);
-static uint8_t i2c_MEMS_Read (t_mems_data *mems_data);
+static int8u i2c_MEMS_Init (void);
+static int8u i2c_MEMS_Read (t_mems_data *mems_data);
 //extern void halInternalResetWatchDog(void);
-static uint8_t i2c_Send_Frame (uint8_t DeviceAddress, uint8_t *pBuffer, uint8_t NoOfBytes);
-static uint8_t i2c_Send_Frame (uint8_t DeviceAddress, uint8_t *pBuffer, uint8_t NoOfBytes);
-uint8_t i2c_write_reg (uint8_t slave_addr, uint8_t reg_addr, uint8_t reg_value);
-static uint8_t i2c_MEMS_Init (void);
-static uint8_t i2c_MEMS_Read (t_mems_data *mems_data);
+static int8u i2c_Send_Frame (int8u DeviceAddress, int8u *pBuffer, int8u NoOfBytes);
+static int8u i2c_Send_Frame (int8u DeviceAddress, int8u *pBuffer, int8u NoOfBytes);
+int8u i2c_write_reg (int8u slave_addr, int8u reg_addr, int8u reg_value);
+static int8u i2c_MEMS_Init (void);
+static int8u i2c_MEMS_Read (t_mems_data *mems_data);
 
 /* Functions -----------------------------------------------------------------*/
-uint8_t mems_Init(void)
+int8u mems_Init(void)
 {  
-  uint8_t ret = 0;
+  int8u ret = 0;
   
   // GPIO assignments
   // PA1: SC2SDA (Serial Data)
@@ -60,9 +60,9 @@ uint8_t mems_Init(void)
   return ret;
 }/* end mems_Init */
 
-uint8_t mems_GetValue(t_mems_data *mems_data)
+int8u mems_GetValue(t_mems_data *mems_data)
 {
-  uint8_t i; 
+  int8u i; 
   i = i2c_MEMS_Read(mems_data);   
   return i;
 }/* end mems_GetValue() */
@@ -79,9 +79,9 @@ uint8_t mems_GetValue(t_mems_data *mems_data)
 * Output         : None
 * Return         : status
 *******************************************************************************/
-static uint8_t i2c_Send_Frame (uint8_t DeviceAddress, uint8_t *pBuffer, uint8_t NoOfBytes)
+static int8u i2c_Send_Frame (int8u DeviceAddress, int8u *pBuffer, int8u NoOfBytes)
 {
-  uint8_t i, data;
+  int8u i, data;
 
   SC2_TWICTRL1 |= SC_TWISTART;   // send start
   WAIT_CMD_FIN();
@@ -115,9 +115,9 @@ static uint8_t i2c_Send_Frame (uint8_t DeviceAddress, uint8_t *pBuffer, uint8_t 
 * Output         : buffer
 * Return         : status
 *******************************************************************************/
-static uint8_t i2c_Receive_Frame (uint8_t slave_addr, uint8_t reg_addr, uint8_t *pBuffer, uint8_t NoOfBytes)
+static int8u i2c_Receive_Frame (int8u slave_addr, int8u reg_addr, int8u *pBuffer, int8u NoOfBytes)
 {
-  uint8_t i, addr = reg_addr;
+  int8u i, addr = reg_addr;
   
   if (NoOfBytes > 1)
     addr += REPETIR;
@@ -168,9 +168,9 @@ static uint8_t i2c_Receive_Frame (uint8_t slave_addr, uint8_t reg_addr, uint8_t 
 * Output         : None
 * Return         : I2C frame
 *******************************************************************************/
-uint8_t i2c_write_reg (uint8_t slave_addr, uint8_t reg_addr, uint8_t reg_value)
+int8u i2c_write_reg (int8u slave_addr, int8u reg_addr, int8u reg_value)
 {
-  uint8_t i2c_buffer[2];
+  int8u i2c_buffer[2];
   
   i2c_buffer[0] = reg_addr;
   i2c_buffer[1] = reg_value;
@@ -188,7 +188,7 @@ uint8_t i2c_write_reg (uint8_t slave_addr, uint8_t reg_addr, uint8_t reg_value)
 * Output         : None
 * Return         : I2C frame
 *******************************************************************************/
-uint8_t i2c_read_reg (uint8_t slave_addr, uint8_t reg_addr, uint8_t *pBuffer, uint8_t NoOfBytes)
+int8u i2c_read_reg (int8u slave_addr, int8u reg_addr, int8u *pBuffer, int8u NoOfBytes)
 {
   return i2c_Receive_Frame (slave_addr, reg_addr, pBuffer, NoOfBytes);
 }/* end i2c_read_reg() */
@@ -201,9 +201,9 @@ uint8_t i2c_read_reg (uint8_t slave_addr, uint8_t reg_addr, uint8_t *pBuffer, ui
 * Output         : None
 * Return         : status
 *******************************************************************************/
-static uint8_t i2c_MEMS_Init (void)
+static int8u i2c_MEMS_Init (void)
 {
-  uint8_t i = 0;
+  int8u i = 0;
 
   i += i2c_write_reg (kLIS3L02DQ_SLAVE_ADDR, STATUS_REG, 0x00);    //no flag
   i += i2c_write_reg (kLIS3L02DQ_SLAVE_ADDR, FF_WU_CFG, 0x00);     // all off
@@ -224,9 +224,9 @@ static uint8_t i2c_MEMS_Init (void)
 * Output         : mems_data
 * Return         : I2C frame
 *******************************************************************************/
-static uint8_t i2c_MEMS_Read (t_mems_data *mems_data)
+static int8u i2c_MEMS_Read (t_mems_data *mems_data)
 {
-  uint8_t i, i2c_buffer[8];
+  int8u i, i2c_buffer[8];
 
   /* Wait for new set of data to be available */
   while (1) {

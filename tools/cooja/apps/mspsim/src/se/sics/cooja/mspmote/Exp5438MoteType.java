@@ -62,9 +62,6 @@ import se.sics.cooja.mspmote.interfaces.MspDebugOutput;
 import se.sics.cooja.mspmote.interfaces.MspMoteID;
 import se.sics.cooja.mspmote.interfaces.UsciA1Serial;
 
-import com.thingsquare.cooja.mspsim.CC1101Radio;
-import com.thingsquare.cooja.mspsim.CC1120Radio;
-
 @ClassDescription("EXP430F5438 mote")
 @AbstractionLevelDescription("Emulated level")
 public class Exp5438MoteType extends MspMoteType {
@@ -182,22 +179,6 @@ public class Exp5438MoteType extends MspMoteType {
     return null;
   }
 
-  public Class<? extends MoteInterface>[] getDefaultMoteInterfaceClasses() {
-	    return new Class[] {
-	            Position.class,
-	            RimeAddress.class,
-	            IPAddress.class,
-	            Mote2MoteRelations.class,
-	            MoteAttributes.class,
-	            MspClock.class,
-	            MspMoteID.class,
-	            Msp802154Radio.class,
-	            UsciA1Serial.class,
-	            Exp5438LED.class,
-	            /*Exp5438LCD.class,*/ /* TODO */
-	            MspDebugOutput.class
-	        };
-  }
   public Class<? extends MoteInterface>[] getAllMoteInterfaceClasses() {
     return new Class[] {
         Position.class,
@@ -208,8 +189,6 @@ public class Exp5438MoteType extends MspMoteType {
         MspClock.class,
         MspMoteID.class,
         Msp802154Radio.class,
-        CC1101Radio.class,
-        CC1120Radio.class,
         UsciA1Serial.class,
         Exp5438LED.class,
         /*Exp5438LCD.class,*/ /* TODO */

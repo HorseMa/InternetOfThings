@@ -6,4 +6,4 @@ all:
 clean:
 	${MAKE} -f Makefile.ravenusbstick clean
 	rm -rf obj_avr-ravenusb
-	rm -rf symbols.c symbols.h ravenusbstick.elf ravenusbstick.hex
+	rm symbols.c symbols.h ravenusbstick.elf ravenusbstick.hex

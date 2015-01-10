@@ -246,7 +246,8 @@ PROCESS_THREAD(irc_process, ev, data)
 	ipaddr = &serveraddr;
 #if UIP_UDP
 	if(uiplib_ipaddrconv(server, &serveraddr) == 0) {
-	  if(resolv_lookup(server, &ipaddr) != RESOLV_STATUS_CACHED) {
+	  ipaddr = resolv_lookup(server);
+	  if(ipaddr == NULL) {
 	    resolv_query(server);
 	  } else {
 	    uip_ipaddr_copy(&serveraddr, ipaddr);
@@ -263,7 +264,8 @@ PROCESS_THREAD(irc_process, ev, data)
 #if UIP_UDP
     } else if(ev == resolv_event_found) {
       
-	  if(resolv_lookup(server, &ipaddr) != RESOLV_STATUS_CACHED) {
+      ipaddr = resolv_lookup(server);
+      if(ipaddr == NULL) {
 	ircc_text_output(&s, server, "hostname not found");
       } else {
 	uip_ipaddr_copy(&serveraddr, ipaddr);

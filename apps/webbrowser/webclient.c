@@ -140,7 +140,9 @@ webclient_get(const char *host, uint16_t port, const char *file)
   ipaddr = &addr;
   if(uiplib_ipaddrconv(host, &addr) == 0) {
 #if UIP_UDP
-    if(resolv_lookup(host,&ipaddr) != RESOLV_STATUS_CACHED) {
+    ipaddr = resolv_lookup(host);
+    
+    if(ipaddr == NULL) {
       return 0;
     }
 #else /* UIP_UDP */
@@ -484,7 +486,7 @@ webclient_appcall(void *state)
 	init_connection();
 	}*/
 #if UIP_UDP
-      if(resolv_lookup(s.host, NULL) != RESOLV_STATUS_CACHED) {
+      if(resolv_lookup(s.host) == NULL) {
 	resolv_query(s.host);
       }
 #endif /* UIP_UDP */

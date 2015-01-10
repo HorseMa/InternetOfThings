@@ -62,7 +62,7 @@ static const struct packetbuf_attrlist attributes[] =
 static void
 recv_from_abc(struct abc_conn *bc)
 {
-  static rimeaddr_t sender;
+  rimeaddr_t sender;
   struct broadcast_conn *c = (struct broadcast_conn *)bc;
 
   rimeaddr_copy(&sender, packetbuf_addr(PACKETBUF_ADDR_SENDER));

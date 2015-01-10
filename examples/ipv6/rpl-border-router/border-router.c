@@ -56,6 +56,8 @@
 
 uint16_t dag_id[] = {0x1111, 0x1100, 0, 0, 0, 0, 0, 0x0011};
 
+extern uip_ds6_nbr_t uip_ds6_nbr_cache[];
+
 static uip_ipaddr_t prefix;
 static uint8_t prefix_set;
 
@@ -147,7 +149,6 @@ PT_THREAD(generate_routes(struct httpd_state *s))
 {
   static int i;
   static uip_ds6_route_t *r;
-  static uip_ds6_nbr_t *nbr;
 #if BUF_USES_STACK
   char buf[256];
 #endif
@@ -165,17 +166,15 @@ PT_THREAD(generate_routes(struct httpd_state *s))
   blen = 0;
 #endif
   ADD("Neighbors<pre>");
-
-  for(nbr = nbr_table_head(ds6_neighbors);
-      nbr != NULL;
-      nbr = nbr_table_next(ds6_neighbors, nbr)) {
+  for(i = 0; i < UIP_DS6_NBR_NB; i++) {
+    if(uip_ds6_nbr_cache[i].isused) {
 
 #if WEBSERVER_CONF_NEIGHBOR_STATUS
 #if BUF_USES_STACK
 {char* j=bufptr+25;
-      ipaddr_add(&nbr->ipaddr);
+      ipaddr_add(&uip_ds6_nbr_cache[i].ipaddr);
       while (bufptr < j) ADD(" ");
-      switch (nbr->state) {
+      switch (uip_ds6_nbr_cache[i].state) {
       case NBR_INCOMPLETE: ADD(" INCOMPLETE");break;
       case NBR_REACHABLE: ADD(" REACHABLE");break;
       case NBR_STALE: ADD(" STALE");break;      
@@ -185,9 +184,9 @@ PT_THREAD(generate_routes(struct httpd_state *s))
 }
 #else
 {uint8_t j=blen+25;
-      ipaddr_add(&nbr->ipaddr);
+      ipaddr_add(&uip_ds6_nbr_cache[i].ipaddr);
       while (blen < j) ADD(" ");
-      switch (nbr->state) {
+      switch (uip_ds6_nbr_cache[i].state) {
       case NBR_INCOMPLETE: ADD(" INCOMPLETE");break;
       case NBR_REACHABLE: ADD(" REACHABLE");break;
       case NBR_STALE: ADD(" STALE");break;      
@@ -197,7 +196,7 @@ PT_THREAD(generate_routes(struct httpd_state *s))
 }
 #endif
 #else
-      ipaddr_add(&nbr->ipaddr);
+      ipaddr_add(&uip_ds6_nbr_cache[i].ipaddr);
 #endif
 
       ADD("\n");
@@ -212,6 +211,7 @@ PT_THREAD(generate_routes(struct httpd_state *s))
         blen = 0;
       }
 #endif
+    }
   }
   ADD("</pre>Routes<pre>");
   SEND_STRING(&s->sout, buf);
@@ -221,7 +221,7 @@ PT_THREAD(generate_routes(struct httpd_state *s))
   blen = 0;
 #endif
 
-  for(r = uip_ds6_route_head(); r != NULL; r = uip_ds6_route_next(r)) {
+  for(r = uip_ds6_route_list_head(); r != NULL; r = list_item_next(r)) {
 
 #if BUF_USES_STACK
 #if WEBSERVER_CONF_ROUTE_LINKS
@@ -247,7 +247,7 @@ PT_THREAD(generate_routes(struct httpd_state *s))
 #endif
 #endif
     ADD("/%u (via ", r->length);
-    ipaddr_add(uip_ds6_route_nexthop(r));
+    ipaddr_add(&r->nexthop);
     if(1 || (r->state.lifetime < 600)) {
       ADD(") %lus\n", r->state.lifetime);
     } else {

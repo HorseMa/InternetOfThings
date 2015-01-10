@@ -63,7 +63,7 @@ configure_b1(int type, int value)
 {
   switch(type) {
   case SENSORS_HW_INIT:
-//#if !MODELS_CONF_CC2531_USB_STICK
+//#if !MODEL_CC2531
     P1INP |= (0x01 << 2); /* Tri-state */
 //#endif
     BUTTON_IRQ_ON_PRESS(1);
@@ -87,7 +87,7 @@ configure_b1(int type, int value)
 /*---------------------------------------------------------------------------*/
 /* Button 2 - cc2531 USb Dongle only */
 /*---------------------------------------------------------------------------*/
-#if 1//MODELS_CONF_CC2531_USB_STICK
+#if 1//MODEL_CC2531
 static int
 value_b2(int type)
 {
@@ -181,7 +181,7 @@ configure_b3(int type, int value)
 #if CC_CONF_OPTIMIZE_STACK_SIZE
 #pragma exclude bits
 #endif
-//#if MODELS_CONF_CC2531_USB_STICK
+//#if MODEL_CC2531
 void
 port_1_isr(void) __interrupt(P1INT_VECTOR)
 {

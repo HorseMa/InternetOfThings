@@ -615,8 +615,7 @@ cc2520_interrupt(void)
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(cc2520_process, ev, data)
 {
-  static int len;
-  len = 0;
+  int len;
   PROCESS_BEGIN();
 
   PRINTF("cc2520_process: started\n");

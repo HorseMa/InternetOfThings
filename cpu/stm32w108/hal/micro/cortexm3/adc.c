@@ -10,18 +10,18 @@
 
 
 #if (NUM_ADC_USERS > 8)
-  #error NUM_ADC_USERS must not be greater than 8, or uint8_t variables in adc.c must be changed
+  #error NUM_ADC_USERS must not be greater than 8, or int8u variables in adc.c must be changed
 #endif
 
-static uint16_t adcData;             // conversion result written by DMA
-static uint8_t adcPendingRequests;   // bitmap of pending requests
-volatile static uint8_t adcPendingConversion; // id of pending conversion
-static uint8_t adcReadingValid;      // bitmap of valid adcReadings
-static uint16_t adcReadings[NUM_ADC_USERS];
-static uint16_t adcConfig[NUM_ADC_USERS];
+static int16u adcData;             // conversion result written by DMA
+static int8u adcPendingRequests;   // bitmap of pending requests
+volatile static int8u adcPendingConversion; // id of pending conversion
+static int8u adcReadingValid;      // bitmap of valid adcReadings
+static int16u adcReadings[NUM_ADC_USERS];
+static int16u adcConfig[NUM_ADC_USERS];
 static boolean adcCalibrated;
-static int16_t Nvss;
-static int16_t Nvdd;
+static int16s Nvss;
+static int16s Nvdd;
 /* Modified the original ADC driver for enabling the ADC extended range mode required for 
    supporting the STLM20 temperature sensor.
    NOTE: 
@@ -30,10 +30,10 @@ static int16_t Nvdd;
    the temperature values 
 */
 #ifdef ENABLE_ADC_EXTENDED_RANGE_BROKEN
-static int16_t Nvref;
-static int16_t Nvref2;
+static int16s Nvref;
+static int16s Nvref2;
 #endif /* ENABLE_ADC_EXTENDED_RANGE_BROKEN */
-static uint16_t adcStaticConfig;
+static int16u adcStaticConfig;
 
 void halAdcSetClock(boolean slow)
 {
@@ -73,8 +73,8 @@ boolean halAdcGetRange(void)
 
 void halAdcIsr(void)
 {
-  uint8_t i;
-  uint8_t conversion = adcPendingConversion; //fix 'volatile' warning; costs no flash
+  int8u i;
+  int8u conversion = adcPendingConversion; //fix 'volatile' warning; costs no flash
 
   // make sure data is ready and the desired conversion is valid
   if ( (INT_ADCFLAG & INT_ADCULDFULL)
@@ -105,7 +105,7 @@ void halAdcIsr(void)
 // otherwise.
 ADCUser startNextConversion()
 {
-  uint8_t i;
+  int8u i;
   
   ATOMIC (
     // start the next requested conversion if any
@@ -143,7 +143,7 @@ void halInternalInitAdc(void)
   ADC_OFFSET = ADC_OFFSET_RESET;
   ADC_GAIN = ADC_GAIN_RESET;
   ADC_DMACFG = ADC_DMARST;
-  ADC_DMABEG = (uint32_t)&adcData;
+  ADC_DMABEG = (int32u)&adcData;
   ADC_DMASIZE = 1;
   ADC_DMACFG = (ADC_DMAAUTOWRAP | ADC_DMALOAD);
 
@@ -186,7 +186,7 @@ StStatus halStartAdcConversion(ADCUser id,
     return ST_ADC_CONVERSION_DEFERRED;
 }
 
-StStatus halRequestAdcData(ADCUser id, uint16_t *value)
+StStatus halRequestAdcData(ADCUser id, int16u *value)
 {
   //Both the ADC interrupt and the global interrupt need to be enabled,
   //otherwise the ADC ISR cannot be serviced.
@@ -220,7 +220,7 @@ StStatus halRequestAdcData(ADCUser id, uint16_t *value)
   return stat;
 }
 
-StStatus halReadAdcBlocking(ADCUser id, uint16_t *value)
+StStatus halReadAdcBlocking(ADCUser id, int16u *value)
 {
   StStatus stat;
 
@@ -250,13 +250,13 @@ StStatus halAdcCalibrate(ADCUser id)
                           ADC_SOURCE_VREF_VREF2,
                           ADC_CONVERSION_TIME_US_4096);
     
-    stat = halReadAdcBlocking(id, (uint16_t *)(&Nvref));
+    stat = halReadAdcBlocking(id, (int16u *)(&Nvref));
     if (stat == ST_ADC_CONVERSION_DONE) {
       halStartAdcConversion(id,
                             ADC_REF_INT,
                             ADC_SOURCE_VREF2_VREF2,
                             ADC_CONVERSION_TIME_US_4096);
-      stat = halReadAdcBlocking(id, (uint16_t *)(&Nvref2));
+      stat = halReadAdcBlocking(id, (int16u *)(&Nvref2));
     }
     if (stat == ST_ADC_CONVERSION_DONE) {
       adcCalibrated = TRUE;
@@ -272,13 +272,13 @@ StStatus halAdcCalibrate(ADCUser id)
                         ADC_REF_INT,
                         ADC_SOURCE_GND_VREF2,
                         ADC_CONVERSION_TIME_US_4096);
-  stat = halReadAdcBlocking(id, (uint16_t *)(&Nvss));
+  stat = halReadAdcBlocking(id, (int16u *)(&Nvss));
   if (stat == ST_ADC_CONVERSION_DONE) {
     halStartAdcConversion(id,
                           ADC_REF_INT,
                           ADC_SOURCE_VREG2_VREF2,
                           ADC_CONVERSION_TIME_US_4096);
-    stat = halReadAdcBlocking(id, (uint16_t *)(&Nvdd));
+    stat = halReadAdcBlocking(id, (int16u *)(&Nvdd));
   }
   if (stat == ST_ADC_CONVERSION_DONE) {
     Nvdd -= Nvss;
@@ -297,11 +297,11 @@ StStatus halAdcCalibrate(ADCUser id)
 // FIXME: support  high voltage range 
 //        use Vref-Vref/2 to calibrate
 // FIXME: check for mfg token specifying measured VDD_PADSA
-int16_t halConvertValueToVolts(uint16_t value)
+int16s halConvertValueToVolts(int16u value)
 {
-  int32_t N;
-  int16_t V;
-  int32_t nvalue;
+  int32s N;
+  int16s V;
+  int32s nvalue;
   
   if (!adcCalibrated) {
     halAdcCalibrate(ADC_USER_LQI);
@@ -317,10 +317,10 @@ int16_t halConvertValueToVolts(uint16_t value)
 #ifdef ENABLE_ADC_EXTENDED_RANGE_BROKEN
     if(halAdcGetRange()){  // High range.
       
-      N = (((int32_t)value + Nvref - 2*Nvref2) << 16)/(2*(Nvref-Nvref2));
+      N = (((int32s)value + Nvref - 2*Nvref2) << 16)/(2*(Nvref-Nvref2));
       // Calculate voltage with: V = (N * VREF) / (2^16) where VDD = 1.2 volts
       // Mutiplying by 1.2*10000 makes the result of this equation 100 uVolts
-      V = (int16_t)((N*12000L) >> 16);
+      V = (int16s)((N*12000L) >> 16);
       if (V > 21000) {  // VDD_PADS ?
         V = 21000;
       }      
@@ -336,7 +336,7 @@ int16_t halConvertValueToVolts(uint16_t value)
       // Mutiplying by0.9*10000 makes the result of this equation 100 uVolts
       // (in fixed point E-4 which allows for 13.5 bits vs millivolts
       // which is only 10.2 bits).
-      V = (int16_t)((N*9000L) >> 16);
+      V = (int16s)((N*9000L) >> 16);
       if (V > 12000) {
         V = 12000;
       }
@@ -349,7 +349,7 @@ int16_t halConvertValueToVolts(uint16_t value)
   return V;
 }
 
-uint8_t halGetADCChannelFromGPIO(uint32_t io)
+int8u halGetADCChannelFromGPIO(int32u io)
 {
 	switch(io)
 	{

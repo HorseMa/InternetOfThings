@@ -13,7 +13,7 @@ CONTIKI_CPU=$(CONTIKI)/cpu/avr
 ### These directories will be searched for the specified source files
 ### TARGETLIBS are platform-specific routines in the contiki library path
 CONTIKI_CPU_DIRS            = . dev
-AVR        = clock.c mtarch.c eeprom.c flash.c rs232.c leds-arch.c watchdog.c rtimer-arch.c bootloader.c
+AVR        = clock.c mtarch.c eeprom.c flash.c rs232.c leds-arch.c watchdog.c rtimer-arch.c bootloader.c settings.c
 ELFLOADER  = elfloader.c elfloader-avr.c symtab-avr.c
 TARGETLIBS = random.c leds.c
 
@@ -106,15 +106,6 @@ endif
 LDFLAGS  += -mmcu=$(MCU) -Wl,-Map=contiki-$(TARGET).map \
            -Wl,--section-start=.bootloader=$(BOOTLOADER_START)
 
-SMALL ?= 1
-
-### These flags help significantly reduce the code size
-ifeq ($(SMALL),1)
-CFLAGS += -ffunction-sections
-CFLAGS += -fdata-sections
-LDFLAGS += -Wl,--gc-sections
-endif # SMALL
-
 ### Setup directory search path for source files
 
 CONTIKI_TARGET_DIRS_CONCAT = ${addprefix $(CONTIKI)/platform/$(TARGET)/, \
@@ -122,7 +113,7 @@ CONTIKI_TARGET_DIRS_CONCAT = ${addprefix $(CONTIKI)/platform/$(TARGET)/, \
 
 ### Compilation rules
 
-$(OBJECTDIR)/%.o: %.c | $(OBJECTDIR)
+$(OBJECTDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 %.o: %.c
@@ -192,23 +183,17 @@ endif
 
 ### Upload image
 #Let avrdude use defaults if port or programmer not defined
-AVRDUDE ?= avrdude
 ifdef AVRDUDE_PORT
  AVRDUDE_PORT:=-P $(AVRDUDE_PORT)
 endif
 ifdef AVRDUDE_PROGRAMMER
  AVRDUDE_PROGRAMMER:=-c $(AVRDUDE_PROGRAMMER)
 endif
-ifdef AVRDUDE_MCU
- AVRDUDE_MCU:=-p $(AVRDUDE_MCU)
-else
- AVRDUDE_MCU:=-p $(MCU)
-endif
 %.u: %.hex
-	$(AVRDUDE) $(AVRDUDE_MCU) $(AVRDUDE_OPTIONS) $(AVRDUDE_PORT) $(AVRDUDE_PROGRAMMER) -U flash:w:$<
+	avrdude $(AVRDUDE_OPTIONS) $(AVRDUDE_PORT) $(AVRDUDE_PROGRAMMER) -p $(MCU) -U flash:w:$<
 
 %.eu: %.eep
-	$(AVRDUDE) $(AVRDUDE_MCU) ${AVRDUDE_OPTIONS} ${AVRDUDE_PORT} ${AVRDUDE_PROGRAMMER} -U eeprom:w:$<
+	avrdude ${AVRDUDE_OPTIONS} -P ${AVRDUDE_PORT} -c ${AVRDUDE_PROGRAMMER} -p ${MCU} -U eeprom:w:$<
 
 symbols.c:
 	cp ${CONTIKI}/tools/empty-symbols.c symbols.c

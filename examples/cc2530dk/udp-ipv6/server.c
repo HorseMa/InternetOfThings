@@ -53,7 +53,7 @@ static uint16_t len;
 #define SERVER_REPLY          1
 
 /* Should we act as RPL root? */
-#define SERVER_RPL_ROOT       0
+#define SERVER_RPL_ROOT       1
 
 #if SERVER_RPL_ROOT
 static uip_ipaddr_t ipaddr;
@@ -94,18 +94,18 @@ static void
 print_stats()
 {
   PRINTF("tl=%lu, ts=%lu, bs=%lu, bc=%lu\n",
-         RIMESTATS_GET(toolong), RIMESTATS_GET(tooshort),
-         RIMESTATS_GET(badsynch), RIMESTATS_GET(badcrc));
-  PRINTF("llrx=%lu, lltx=%lu, rx=%lu, tx=%lu\n", RIMESTATS_GET(llrx),
-         RIMESTATS_GET(lltx), RIMESTATS_GET(rx), RIMESTATS_GET(tx));
+         rimestats.toolong, rimestats.tooshort, rimestats.badsynch,
+         rimestats.badcrc);
+  PRINTF("llrx=%lu, lltx=%lu, rx=%lu, tx=%lu\n", rimestats.llrx,
+         rimestats.lltx, rimestats.rx, rimestats.tx);
 }
 #endif
 /*---------------------------------------------------------------------------*/
 static void
 print_local_addresses(void)
 {
-  static int i;
-  static uint8_t state;
+  int i;
+  uint8_t state;
 
   PRINTF("Server IPv6 addresses:\n");
   for(i = 0; i < UIP_DS6_ADDR_NB; i++) {
@@ -126,7 +126,7 @@ print_local_addresses(void)
 void
 create_dag()
 {
-  static rpl_dag_t *dag;
+  rpl_dag_t *dag;
 
   uip_ip6addr(&ipaddr, 0xaaaa, 0, 0, 0, 0, 0, 0, 0);
   uip_ds6_set_addr_iid(&ipaddr, &uip_lladdr);
@@ -161,10 +161,6 @@ PROCESS_THREAD(udp_server_process, ev, data)
 #endif
 
   server_conn = udp_new(NULL, UIP_HTONS(0), NULL);
-  if(server_conn == NULL)
-  {
-    putstring("udp new err\n");
-  }
   udp_bind(server_conn, UIP_HTONS(3000));
 
   PRINTF("Listen port: 3000, TTL=%u\n", server_conn->ttl);

@@ -69,6 +69,7 @@ static int8_t len;
 #define REQUEST_TYPE_TOTALS  0xFF
 
 extern uip_ds6_netif_t uip_ds6_if;
+extern uip_ds6_nbr_t uip_ds6_nbr_cache[UIP_DS6_NBR_NB];
 static uip_ds6_route_t *rt;
 static uip_ds6_defrt_t *defrt;
 static uip_ipaddr_t *addr;
@@ -81,7 +82,6 @@ process_request() CC_NON_BANKED
   uint8_t i;
   uint8_t left;
   uint8_t entry_size;
-  uip_ds6_nbr_t *nbr;
 
   left = VIZTOOL_MAX_PAYLOAD_LEN - 1;
   len = 2; /* start filling the buffer from position [2] */
@@ -89,44 +89,46 @@ process_request() CC_NON_BANKED
   if(buf[0] == REQUEST_TYPE_ND) {
     /* Neighbors */
     PRINTF("Neighbors\n");
-    for(nbr = nbr_table_head(ds6_neighbors);
-        nbr != NULL;
-        nbr = nbr_table_next(ds6_neighbors, nbr)) {
-      entry_size = sizeof(i) + sizeof(uip_ipaddr_t) + sizeof(uip_lladdr_t)
-              + sizeof(nbr->state);
-      PRINTF("%02u: ", i);
-      PRINT6ADDR(&nbr->ipaddr);
-      PRINTF(" - ");
-      PRINTLLADDR(&nbr->lladdr);
-      PRINTF(" - %u\n", nbr->state);
+    for(i = buf[1]; i < UIP_DS6_NBR_NB; i++) {
+      if(uip_ds6_nbr_cache[i].isused) {
+        entry_size = sizeof(i) + sizeof(uip_ipaddr_t) + sizeof(uip_lladdr_t)
+          + sizeof(uip_ds6_nbr_cache[i].state);
+        PRINTF("%02u: ", i);
+        PRINT6ADDR(&uip_ds6_nbr_cache[i].ipaddr);
+        PRINTF(" - ");
+        PRINTLLADDR(&uip_ds6_nbr_cache[i].lladdr);
+        PRINTF(" - %u\n", uip_ds6_nbr_cache[i].state);
 
-      memcpy(buf + len, &i, sizeof(i));
-      len += sizeof(i);
-      memcpy(buf + len, uip_ds6_nbr_get_ipaddr(nbr), sizeof(uip_ipaddr_t));
-      len += sizeof(uip_ipaddr_t);
-      memcpy(buf + len, uip_ds6_nbr_get_ll(nbr), sizeof(uip_lladdr_t));
-      len += sizeof(uip_lladdr_t);
-      memcpy(buf + len, &nbr->state,
-          sizeof(nbr->state));
-      len += sizeof(nbr->state);
+        memcpy(buf + len, &i, sizeof(i));
+        len += sizeof(i);
+        memcpy(buf + len, &uip_ds6_nbr_cache[i].ipaddr, sizeof(uip_ipaddr_t));
+        len += sizeof(uip_ipaddr_t);
+        memcpy(buf + len, &uip_ds6_nbr_cache[i].lladdr, sizeof(uip_lladdr_t));
+        len += sizeof(uip_lladdr_t);
+        memcpy(buf + len, &uip_ds6_nbr_cache[i].state,
+               sizeof(uip_ds6_nbr_cache[i].state));
+        len += sizeof(uip_ds6_nbr_cache[i].state);
 
-      count++;
-      left -= entry_size;
+        count++;
+        left -= entry_size;
 
-      if(left < entry_size) {
-        break;
+        if(left < entry_size) {
+          break;
+        }
       }
     }
   } else if(buf[0] == REQUEST_TYPE_RT) {
     uint32_t flip = 0;
 
     PRINTF("Routing table\n");
-    rt = uip_ds6_route_head();
+    rt = uip_ds6_route_list_head();
 
     for(i = buf[1]; i < uip_ds6_route_num_routes(); i++) {
       if(rt != NULL) {
         entry_size = sizeof(i) + sizeof(rt->ipaddr)
           + sizeof(rt->length)
+          + sizeof(rt->metric)
+          + sizeof(rt->nexthop)
           + sizeof(rt->state.lifetime)
           + sizeof(rt->state.learned_from);
 
@@ -136,11 +138,16 @@ process_request() CC_NON_BANKED
         len += sizeof(rt->ipaddr);
         memcpy(buf + len, &rt->length, sizeof(rt->length));
         len += sizeof(rt->length);
+        memcpy(buf + len, &rt->metric, sizeof(rt->metric));
+        len += sizeof(rt->metric);
+        memcpy(buf + len, &rt->nexthop, sizeof(rt->nexthop));
+        len += sizeof(rt->nexthop);
 
         PRINT6ADDR(&rt->ipaddr);
         PRINTF(" - %02x", rt->length);
+        PRINTF(" - %02x", rt->metric);
         PRINTF(" - ");
-        PRINT6ADDR(uip_ds6_route_nexthop(rt));
+        PRINT6ADDR(&rt->nexthop);
 
         flip = uip_htonl(rt->state.lifetime);
         memcpy(buf + len, &flip, sizeof(flip));
@@ -156,7 +163,7 @@ process_request() CC_NON_BANKED
         count++;
         left -= entry_size;
 
-        rt = uip_ds6_route_next(rt);
+        rt = list_item_next(rt);
 
         if(left < entry_size) {
           break;
@@ -219,10 +226,10 @@ process_request() CC_NON_BANKED
         buf[2]++;
       }
     }
-    for(nbr = nbr_table_head(ds6_neighbors);
-        nbr != NULL;
-        nbr = nbr_table_next(ds6_neighbors, nbr)) {
+    for(i = 0; i < UIP_DS6_NBR_NB; i++) {
+      if(uip_ds6_nbr_cache[i].isused) {
         buf[3]++;
+      }
     }
 
     buf[4] = uip_ds6_route_num_routes();

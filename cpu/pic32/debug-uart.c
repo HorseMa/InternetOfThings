@@ -54,7 +54,7 @@
 
 #include <dev/serial-line.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #if DEBUG
 #include <stdio.h>
 #define PRINTF(...) printf(__VA_ARGS__)
@@ -62,7 +62,7 @@
 #define PRINTF(...)
 #endif
 
-#define DEBUG_UART(XX, YY)                            \
+#define DEBUG_UART(XX)                                \
   void                                                \
   _mon_putc(char c)                                   \
   {                                                   \
@@ -77,20 +77,20 @@
     PRINTF("Initializing debug uart: %lubps\n", ubr); \
   }                                                   \
                                                       \
-  UART_INTERRUPT(XX, YY, pic32_uart##XX##_write);
+  UART_INTERRUPT(XX, 2, pic32_uart##XX##_write);
 
 #ifdef __USE_UART_PORT1A_FOR_DEBUG__
-DEBUG_UART(1A, 0);
+DEBUG_UART(1A);
 #elif defined  __USE_UART_PORT1B_FOR_DEBUG__
-DEBUG_UART(1B, 2);
+DEBUG_UART(1B);
 #elif defined  __USE_UART_PORT2A_FOR_DEBUG__
-DEBUG_UART(2A, 1);
+DEBUG_UART(2A);
 #elif defined  __USE_UART_PORT2B_FOR_DEBUG__
-DEBUG_UART(2B, 2);
+DEBUG_UART(2B);
 #elif defined  __USE_UART_PORT3A_FOR_DEBUG__
-DEBUG_UART(3A, 1);
+DEBUG_UART(3A);
 #elif defined  __USE_UART_PORT3B_FOR_DEBUG__
-DEBUG_UART(3B, 2);
+DEBUG_UART(3B);
 #else
 DEBUG_UART(1A);
 #endif

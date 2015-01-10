@@ -41,11 +41,12 @@
 #endif /* DEBUG */
 
 /*---------------------------------------------------------------------------*/
+#if !NETSTACK_CONF_SHORTCUTS
 void
 mac_call_sent_callback(mac_callback_t sent, void *ptr, int status, int num_tx)
 {
   PRINTF("mac_callback_t %p ptr %p status %d num_tx %d\n",
-         (void *)sent, ptr, status, num_tx);
+         sent, ptr, status, num_tx);
   switch(status) {
   case MAC_TX_COLLISION:
     PRINTF("mac: collision after %d tx\n", num_tx);
@@ -64,4 +65,5 @@ mac_call_sent_callback(mac_callback_t sent, void *ptr, int status, int num_tx)
     sent(ptr, status, num_tx);
   }
 }
+#endif
 /*---------------------------------------------------------------------------*/
